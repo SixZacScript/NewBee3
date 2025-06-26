@@ -71,15 +71,27 @@ function FluentHelper:_initializeAllTabs()
 end
 
 function FluentHelper:_setupManagers()
-
+    local settingsTab = self.Tabs.Settings
+    self.hideDecorations = settingsTab:AddToggle("hideDecorations", {
+        Title = "Hide Decorations",
+        Default = true,
+        Callback = function(val)
+            shared.main.hideDecorations = val
+            if val then
+                shared.Helpers.Hide:Apply()
+            else
+                shared.Helpers.Hide:Restore()
+            end
+        end
+    })
 
     self.SaveManager:SetLibrary(self.Fluent)
     self.InterfaceManager:SetLibrary(self.Fluent)
     self.InterfaceManager:SetFolder("FluentScriptHub")
     self.SaveManager:SetFolder("FluentScriptHub/specific-game")
 
-    self.InterfaceManager:BuildInterfaceSection(self.Tabs.Settings)
-    self.SaveManager:BuildConfigSection(self.Tabs.Settings)
+    self.InterfaceManager:BuildInterfaceSection(settingsTab)
+    self.SaveManager:BuildConfigSection(settingsTab)
 
     self.Window:SelectTab(1)
     self.SaveManager:LoadAutoloadConfig()

@@ -1,6 +1,6 @@
 shared.isGithub = false
 if shared.isGithub then
-    shared.URL = "https://raw.githubusercontent.com/SixZacScript/NewBeeV3/master"
+    shared.URL = "https://raw.githubusercontent.com/SixZacScript/NewBee3/master"
     shared.ModuleLoader = loadstring(game:HttpGet(shared.URL..'/Helper/Module.lua'))()
 else
     shared.URL = "NewBee3"
@@ -15,11 +15,13 @@ shared.main = {
         autoDig = false,
         autoSprinkler = false,
         autoPlanter = false,
+        autoFarmSprout = false,
         autoHoneyMask = false,
     },
     farm = {
         farmBubble = false,
         ignoreHoneyToken = false,
+        priorityTokens = {},
     },
     Planter = {
         Slots = {
@@ -47,16 +49,19 @@ shared.main = {
     Equip = {
         defaultMask = nil
     },
+    hideDecorations = false,
     WalkSpeed = 70,
     JumpPower = 80,
 }
 
 
-
-
+shared.Data = {
+    TokenData = shared.ModuleLoader:load('Data/Token.lua')
+}
 shared.Helpers = shared.ModuleLoader:loadAllHelpers()
 local FluentModule = shared.ModuleLoader:load('UI/UI.lua')
 local BotModule = shared.ModuleLoader:load('Class/Bot.lua')
+
 
 shared.Bot = BotModule.new()
 shared.FluentUI = FluentModule.new()

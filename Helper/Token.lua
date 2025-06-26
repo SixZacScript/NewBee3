@@ -1,7 +1,8 @@
+local HttpService = game:GetService("HttpService")
 local Rep = game:GetService("ReplicatedStorage")
 local Events = Rep.Events
 
-local TokenDataModule = shared.ModuleLoader:load('Data/Token.lua')
+
 local TokenCreator = shared.ModuleLoader:load('Class/TokenCreator.lua')
 
 local TokenHelper = {}
@@ -53,7 +54,7 @@ function TokenHelper:handleAddedToken(tokenParams, tokenType)
 
     if not tokenType  then
         local assetID = self:extractAssetID(icon)
-        name, tokenData = TokenDataModule:getTokenById(assetID)
+        name, tokenData = shared.Data.TokenData:getTokenById(assetID)
     else
         duration = 4
         name = tokenType
@@ -77,37 +78,37 @@ function TokenHelper:handleAddedToken(tokenParams, tokenType)
     end)
     self.activeTokens[serverID] = newToken
 end
-
-function TokenHelper:getBestTokenByField(targetField, option)
+function TokenHelper:getBestTokenByField(targetField, options)
     local player = shared.Helpers.Player
     if not player:isValid() or not player.rootPart or not targetField then 
         return nil
     end
 
-    option = option or {}
-    local ignoreSkill = option.ignoreSkill or false
+    options = options or {}
+    local ignoreSkill = options.ignoreSkill or false
     local ignoreHoneyToken = shared.main.farm.ignoreHoneyToken or false
+    local priorityTokens = shared.main.farm.priorityTokens
+    local farmBubble = shared.main.farm.farmBubble
     local playerRoot = player.rootPart
+
+    -- Helper function to check if token passes all filters
+    local function isValidToken(tokenData)
+        if tokenData.touched or not tokenData.position or not tokenData.tokenField then return false end
+        if tokenData.tokenField ~= targetField then return false end
+        if tokenData.isSkill and ignoreSkill then return false end
+        if ignoreHoneyToken and tokenData.id == 1472135114 then return false end
+        if not farmBubble and tokenData.name == "Bubble" then return false end
+        return true
+    end
+
     local bestToken = nil
     local shortestDistance = math.huge
-
+    -- First loop: check only priority tokens
     for _, tokenData in pairs(self.activeTokens) do
-        if tokenData.touched or not tokenData.position or not tokenData.tokenField then
-            continue
-        end
-        if tokenData.tokenField ~= targetField then
-            continue
-        end
-
-        if (tokenData.isSkill and ignoreSkill) then
-            continue
-        end
-        if (ignoreHoneyToken and tokenData.id == 1472135114) then
-            continue
-        end
-        if (not shared.main.farm.farmBubble and tokenData.name == "Bubble") then
-            continue
-        end
+        if not isValidToken(tokenData) then continue end
+        
+        local isPriority = table.find(priorityTokens, tokenData.name)
+        if not isPriority then continue end
 
         local distance = self:calculateDistance(tokenData, playerRoot)
         if distance and distance < shortestDistance then
@@ -116,8 +117,24 @@ function TokenHelper:getBestTokenByField(targetField, option)
         end
     end
 
+    -- If no priority token found, check all tokens
+    if not bestToken then
+        shortestDistance = math.huge
+        for _, tokenData in pairs(self.activeTokens) do
+            if not isValidToken(tokenData) then continue end
+
+            local distance = self:calculateDistance(tokenData, playerRoot)
+            if distance and distance < shortestDistance then
+                shortestDistance = distance
+                bestToken = tokenData
+            end
+        end
+    end
+
     return bestToken
 end
+
+
 
 function TokenHelper:calculateDistance(tokenData, playerRoot)
     if not tokenData or not tokenData.position or not playerRoot or not playerRoot.Position then

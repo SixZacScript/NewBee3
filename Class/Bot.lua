@@ -1,5 +1,6 @@
 local RunService = game:GetService("RunService")
 local TaskManager = shared.ModuleLoader:load('Class/Task.lua')
+local MonsterHelper = shared.ModuleLoader:load('Class/Monster.lua')
 
 
 local Bot = {}
@@ -26,6 +27,7 @@ function Bot.new()
     self.plr = shared.Helpers.Player
     self.tokenHelper = shared.Helpers.Token
     self.taskManager = TaskManager.new(self)
+    self.monsterHelper = MonsterHelper.new()
 
     self.currentField = self.Field:getField()
     return self
@@ -40,7 +42,6 @@ function Bot:realtimeCheck()
     self.connections.realtime = RunService.Heartbeat:Connect(function(deltaTime)
         if self.state == Bot.State.FARM or self.state == Bot.State.Idle  then
             if self.currentField ~= self.Field:getField() then
-                print("Field changed")
                 self.currentField = self.Field:getField()
             end
         end
@@ -199,7 +200,6 @@ function Bot:cleanup()
         self.connections[key] = nil 
     end
 end
-
 
 function Bot:shouldDoPlanter()
     if not shared.main.auto.autoPlanter then return false end

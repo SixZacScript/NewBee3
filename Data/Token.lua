@@ -1,25 +1,25 @@
 local TokenHelper = {}
 TokenHelper.tokens = {
-    ["Diamond Egg"] = {id = 1471850677, isSkill = false, Priority = 100},
-    ["Star Jelly"] = {id = 2319943273, isSkill = false, Priority = 100},
-    ["Gold Egg"] = {id = 1471849394, isSkill = false, Priority = 95},
-    ["Sprout"] = {id = 2529092020, isSkill = false, Priority = 90},
-    ["Hard Wax"] = {id = 8277780065, isSkill = false, Priority = 90},
+    ["Diamond Egg"] = {id = 1471850677, isSkill = false, Priority = 100, isRare = true},
+    ["Star Jelly"] = {id = 2319943273, isSkill = false, Priority = 100, isRare = true},
+    ["Gold Egg"] = {id = 1471849394, isSkill = false, Priority = 95, isRare = true},
+    ["Sprout"] = {id = 2529092020, isSkill = false, Priority = 90, isRare = true},
+    ["Hard Wax"] = {id = 8277780065, isSkill = false, Priority = 90, isRare = true},
 
-    ["Moon Charm"] = {id = 2306224708, isSkill = false, Priority = 89},
-    ["Oil"] = {id = 2545746569, isSkill = false, Priority = 89},
-    ["Glitter"] = {id = 2542899798, isSkill = false, Priority = 89},
-    ["Glue"] = {id = 2504978518, isSkill = false, Priority = 89},
-    ["Loaded Dice"] = {id = 8055428094, isSkill = false, Priority = 89},
-    ["Ticket"] = {id = 1674871631, isSkill = false, Priority = 85},
-    ["Neon Berry"] = {id = 4483267595, isSkill = false, Priority = 85},
-    ["Blue Extract"] = {id = 2495936060, isSkill = false, Priority = 80},
-    ["Red Extract"] = {id = 2495935291, isSkill = false, Priority = 80},
-    ["Dice"] = {id = 2863468407, isSkill = false, Priority = 80},
-    ["Soft Wax"] = {id = 8277778300, isSkill = false, Priority = 80},
+    ["Moon Charm"] = {id = 2306224708, isSkill = false, Priority = 89, isRare = true},
+    ["Oil"] = {id = 2545746569, isSkill = false, Priority = 89, isRare = true},
+    ["Glitter"] = {id = 2542899798, isSkill = false, Priority = 89, isRare = true},
+    ["Glue"] = {id = 2504978518, isSkill = false, Priority = 89, isRare = true},
+    ["Loaded Dice"] = {id = 8055428094, isSkill = false, Priority = 89, isRare = true},
+    ["Ticket"] = {id = 1674871631, isSkill = false, Priority = 85, isRare = true},
+    ["Neon Berry"] = {id = 4483267595, isSkill = false, Priority = 85, isRare = true},
+    ["Blue Extract"] = {id = 2495936060, isSkill = false, Priority = 80, isRare = true},
+    ["Red Extract"] = {id = 2495935291, isSkill = false, Priority = 80, isRare = true},
+    ["Dice"] = {id = 2863468407, isSkill = false, Priority = 80, isRare = true},
+    ["Soft Wax"] = {id = 8277778300, isSkill = false, Priority = 80, isRare = true},
     ["Star"] = {id = 2000457501, isSkill = true, Priority = 80},
     ["Stinger"] = {id = 2314214749, isSkill = false, Priority = 80},
-    ["Silver Egg"] = {id = 1471848094, isSkill = false, Priority = 80},
+    ["Silver Egg"] = {id = 1471848094, isSkill = false, Priority = 80, isRare = true},
 
     ["Link Token"] = {id = 1629547638, isSkill = true, Priority = 75},
     ["Baby Love"] = {id = 1472256444, isSkill = true, Priority = 74},
@@ -30,8 +30,8 @@ TokenHelper.tokens = {
     ["Scratch"] = {id = 1104415222, isSkill = true, Priority = 70},
     ["Melody"] = {id = 253828517, isSkill = true, Priority = 70},
 
-    ["Red Boost"] = {id = 1442859163, isSkill = true, Priority = 65},
-    ["Blue Boost"] = {id = 1442863423, isSkill = true, Priority = 65},
+    ["Red Boost"] = {id = 1442859163, isSkill = true, Priority = 65, isRare = true},
+    ["Blue Boost"] = {id = 1442863423, isSkill = true, Priority = 65, isRare = true},
     ["White Boost"] = {id = 3877732821, isSkill = true, Priority = 65},
     ["Dice 2"] = {id = 8054996680, isSkill = false, Priority = 65},
     ["Buzz Bomb"] = {id = 1442725244, isSkill = true, Priority = 64},
@@ -47,22 +47,23 @@ TokenHelper.tokens = {
     ["Ant Pass"] = {id = 2060626811, isSkill = false, Priority = 50},
     ["Broken Drive"] = {id = 13369738621, isSkill = false, Priority = 50},
 
-    ["Cloud Vial"] = {id = 3030569073, isSkill = false, Priority = 45},
-    ["Micro Converter"] = {id = 2863122826, isSkill = false, Priority = 45},
+    ["Cloud Vial"] = {id = 3030569073, isSkill = false, Priority = 45, isRare = true},
+    ["Micro Converter"] = {id = 2863122826, isSkill = false, Priority = 45, isRare = true},
     ["Robot Pass"] = {id = 3036899811, isSkill = false, Priority = 40},
     ["Gumdrops"] = {id = 1838129169, isSkill = false, Priority = 40},
-    ["Coconut"] = {id = 3012679515, isSkill = false, Priority = 40},
+    
 
     ["Pineapple Candy"] = {id = 2584584968, isSkill = false, Priority = 35},
-    ["Blueberry"] = {id = 2028453802, isSkill = false, Priority = 30},
     ["Red Balloon"] = {id = 8058047989, isSkill = false, Priority = 30},
     ["Jelly Bean 1"] = {id = 3080529618, isSkill = false, Priority = 30},
     ["Jelly Bean 2"] = {id = 3080740120, isSkill = false, Priority = 30},
     ["Whirligig"] = {id = 8277898895, isSkill = false, Priority = 30},
 
-    ["Sunflower Seed"] = {id = 1952682401, isSkill = false, Priority = 25},
-    ["Pineapple"] = {id = 1952796032, isSkill = false, Priority = 25},
-    ["Strawberry"] = {id = 1952740625, isSkill = false, Priority = 25},
+    ["Coconut"] = {id = 3012679515, isSkill = false, Priority = 25, isRare = true},
+    ["Blueberry"] = {id = 2028453802, isSkill = false, Priority = 25, isRare = true},
+    ["Sunflower Seed"] = {id = 1952682401, isSkill = false, Priority = 25, isRare = true},
+    ["Pineapple"] = {id = 1952796032, isSkill = false, Priority = 25, isRare = true},
+    ["Strawberry"] = {id = 1952740625, isSkill = false, Priority = 25, isRare = true},
     ["Royal Jelly"] = {id = 1471882621, isSkill = false, Priority = 20},
 
     ["Rage"] = {id = 1442700745, isSkill = true, Priority = 1},
@@ -116,6 +117,31 @@ function TokenHelper:getTokenById(searchId)
     return "Unknown", { id = searchId, isSkill = false, Priority = 1, Name = "Unknown" }
 end
 
+function TokenHelper:getRareToken(getOnlyName)
+    local tokens = {}
+    for key, token in pairs(self.tokens) do
+        if token.isRare and getOnlyName then
+            table.insert(tokens, key)
+        elseif token.isRare and not getOnlyName then
+            table.insert(tokens, token)
+        end
+    end
+
+    table.sort(tokens, function(a, b)
+        return (getOnlyName and a or a.Name) < (getOnlyName and b or b.Name)
+    end)
+
+    return tokens
+end
+
+function TokenHelper:getTokenByName(name)
+    local data = self.tokens[name]
+    if data then
+        data.Name = name
+        return data
+    end
+    return nil
+end
 
 
 

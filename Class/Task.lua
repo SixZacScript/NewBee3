@@ -55,12 +55,10 @@ function TaskManager:harvestPlanter(targetPlanter)
 
         task.wait(1)
         placeEvt:FireServer({ Name = planterFullname })
+        playerHelper:getPlayerStats()
 
-        local startTime = os.clock()
-        while os.clock() - startTime < 10 do
-            self:doFarming(targetField)
-            task.wait() 
-        end
+        self:performCleanupCollection(targetField, {waitTime = 10, ignoreSkill = true})
+
         return coroutine.resume(thread, true)
     end)
 
@@ -91,6 +89,7 @@ function TaskManager:placePlanter()
         task.wait(1)
         placeEvt:FireServer({ Name = fullName })
         playerHelper:getActivePlanter()
+        playerHelper:getPlayerStats()
 
         return coroutine.resume(thread, true)
     end)
@@ -98,36 +97,148 @@ function TaskManager:placePlanter()
     return coroutine.yield()
 end
 
-function TaskManager:doFarming(currentField)
+function TaskManager:doSprout(sprout, field)
+
+    local player = self.bot.plr
+    if not sprout or not field then
+        return warn("sprout or field not found: doSprout")
+    end
+
+    -- Early exit if not farming sprouts
+    if not self.bot.isRunning or not shared.main.auto.autoFarmSprout then
+        return false
+    end
+
+    -- Ensure player is in correct field
+    if not player:isPlayerInField(field) then
+        self:returnToField({ Position = field.Position, Player = player })
+    end
+
+    local bot = self.bot
+    while bot.isRunning do
+        -- Check exit conditions first
+        -- if not shared.main.auto.autoFarmSprout or bot:shouldAvoidMonster() then
+        if not shared.main.auto.autoFarmSprout then
+            return true
+        end
+        if self:getSproutAmount(sprout) <= 0 then
+            break
+        end
+
+        self:farming(field)
+        if player:isCapacityFull() then return true end
+
+        task.wait()
+    end
+    
+    self:performCleanupCollection(field, {
+        waitTime = 20,
+        ignoreSkill = true,
+    })
+    return true
+end
+
+function TaskManager:performCleanupCollection(field, options)
+    options = options and options or {}
+    local startTime = os.clock()
+    local waitTime = options.waitTime or 15
+    
+    while os.clock() - startTime < waitTime and self.bot.isRunning and shared.main.auto.autoFarmSprout do
+        self:farming(field, options)
+        task.wait()
+    end
+end
+
+function TaskManager:farming(currentField , options)
+    if not self.bot.isRunning then
+        return false 
+    end
+
     if self.connections.tokenRunService then
         self.connections.tokenRunService:Disconnect()
         self.connections.tokenRunService = nil
     end
-
-    if not self.bot.plr:isPlayerInField(currentField) then
-        self:returnToField({Player = self.bot.plr, Position = currentField.Position})
-    end
-
-    local token = self.bot.tokenHelper:getBestTokenByField(currentField)
+    
+    local token = self.bot.tokenHelper:getBestTokenByField(currentField, options)
     local targetPos = (token and not token.touched) and token.position or self.bot.Field:getRandomFieldPosition(currentField)
+    
+    -- Check monster count before starting movement
+    local monsterCount = self.bot.monsterHelper:getCloseMonsterCount()
+    if monsterCount > 0 then
+        self:doJumping()
+    end
+    
+    -- Cleanup method to avoid code duplication
+    local function cleanup(shouldBreak)
+        if self.connections.tokenRunService then
+            self.connections.tokenRunService:Disconnect()
+            self.connections.tokenRunService = nil
+        end
+        if shouldBreak then shouldBreak() end
+    end
+    
     self.bot:moveTo(targetPos, {
         onBreak = function(shouldBreak)
             local runService = game:GetService("RunService")
             self.connections.tokenRunService = runService.Heartbeat:Connect(function()
+                -- Check monster count in runService
+                local currentMonsterCount = self.bot.monsterHelper:getCloseMonsterCount()
+                if currentMonsterCount > 0 then
+                    self:doJumping()
+                    cleanup(shouldBreak)
+                    return
+                end
+                
                 local newToken = self.bot.tokenHelper:getBestTokenByField(currentField)
-                if newToken and not newToken.touched and newToken ~= token then
-                    -- FIX: Clean up the connection properly
-                    if self.connections.tokenRunService then
-                        self.connections.tokenRunService:Disconnect()
-                        self.connections.tokenRunService = nil
-                    end
-                    if shouldBreak then shouldBreak() end
+                if newToken and not newToken.touched and newToken ~= token or not self.bot.isRunning then
+                    cleanup(shouldBreak)
                 end
             end)
             
             return self.connections.tokenRunService
         end,
     })
+end
+function TaskManager:doJumping()
+    local playerHelper = self.bot.plr
+    playerHelper:stopMoving()
+
+    while self.bot.isRunning do
+        local currentMonsterCount = self.bot.monsterHelper:getCloseMonsterCount()
+        
+        if currentMonsterCount == 0 then
+            return true
+        end
+        
+        -- Perform jump using humanoid
+        local humanoid = playerHelper.humanoid
+        if humanoid then
+            humanoid.Jump = true
+        end
+        
+        task.wait(1.25)
+    end
+    return true
+end
+function TaskManager:doFarming(currentField)
+    if self.connections.tokenRunService then
+        self.connections.tokenRunService:Disconnect()
+        self.connections.tokenRunService = nil
+    end
+
+    local sprout, sproutHealth = self:hasSprout()
+    if sprout and shared.main.auto.autoFarmSprout and sproutHealth > 0 then
+        local field = shared.Helpers.Field:getFieldByPosition(sprout.Position)
+        if field then return self:doSprout(sprout, field) end
+    end
+
+    if not self.bot.plr:isPlayerInField(currentField) then
+        self:returnToField({Player = self.bot.plr, Position = currentField.Position})
+    end
+
+  
+
+    self:farming(currentField)
 end
 
 function TaskManager:convertPollen()
@@ -170,17 +281,16 @@ function TaskManager:convertPollen()
         local timeout = 300
 
         while shouldContinueConverting() and bot.isRunning and (tick() - startTime < timeout) and bot.state == bot.State.Convert do
+            task.wait(.5)
+
             if convertButton and convertButton.BackgroundColor3 ~= Color3.fromRGB(201, 39, 28) and player.Pollen > 0 then
                 convertEvent:FireServer("ToggleHoneyMaking")
             end
-            task.wait()
         end
 
         player:disableWalking(false)
 
-        if bot.isRunning then
-            task.wait(4)
-        end
+        if bot.isRunning then task.wait(4) end
 
         player:equipMask()
         coroutine.resume(thread, true)
@@ -188,5 +298,45 @@ function TaskManager:convertPollen()
 
     return coroutine.yield()
 end
+function TaskManager:getSproutAmount(sprout)
+    local function cleanNumberString(str)
+        local cleaned = str
+            :gsub("[%z\1-\127\194-\244][\128-\191]*", function(c)
+                return c:match("^[%z\1-\127]$") and c or ""
+            end)
+            :gsub(",", "")
+        return tonumber(cleaned)
+    end
 
+    local GuiPos = sprout:FindFirstChild("GuiPos")
+    if not GuiPos then return 0 end
+    local Gui = GuiPos.Gui
+    local Frame = Gui.Frame
+    local TextLabel = Frame.TextLabel
+    return cleanNumberString(TextLabel.Text)
+
+end
+function TaskManager:hasSprout()
+    if not shared.main.auto.autoFarmSprout then
+        return nil, 0
+    end
+    local SproutsFolder = workspace.Sprouts
+    local bestSprout = nil
+    local highestAmount = -math.huge
+
+    for index, Sprout in pairs(SproutsFolder:GetChildren()) do
+
+        if Sprout and Sprout:FindFirstChild("GrowthStep") then
+            local amount = self:getSproutAmount(Sprout)
+            if amount and amount > highestAmount then
+                highestAmount = amount
+                bestSprout = Sprout
+            end
+        end
+    end
+    if not bestSprout then
+        return nil, 0
+    end
+    return bestSprout, highestAmount
+end
 return TaskManager

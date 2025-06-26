@@ -1,3 +1,4 @@
+local HttpService = game:GetService("HttpService")
 local Rep = game:GetService("ReplicatedStorage")
 local mainTab = {}
 mainTab.__index = mainTab
@@ -54,6 +55,20 @@ function mainTab:load(FluentUI)
     })
 
     local farmSettinSection = self.Tab:AddSection("Farm Setting")
+    self.options.priorityTokens = farmSettinSection:AddDropdown("priorityTokens", {
+        Title = "Priority Tokens",
+        Values = shared.Data.TokenData:getRareToken(true),
+        Multi = true,
+        Default = {},
+        Callback = function(tokensName)
+            local tokens = {}
+            for tokenName, state in pairs(tokensName) do
+                table.insert(tokens, tokenName)
+            end
+            shared.main.farm.priorityTokens = tokens
+        end
+
+    })
     self.options.ignoreHoneyToken = farmSettinSection:AddToggle("ignoreHoneyToken", {
         Title = "Ignore Honey Tokens",
         Default = shared.main.farm.ignoreHoneyToken,
@@ -67,6 +82,13 @@ function mainTab:load(FluentUI)
         Default = false,
         Callback = function(value)
             shared.main.farm.farmBubble = value
+        end
+    })
+    self.autoFarmSprout = farmSettinSection:AddToggle("autoFarmSprout", {
+        Title = "Farm Sprout",
+        Default = false,
+        Callback = function(val)
+            shared.main.auto.autoFarmSprout = val
         end
     })
     return self

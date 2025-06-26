@@ -1,3 +1,4 @@
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Rep = game:GetService("ReplicatedStorage")
@@ -26,7 +27,7 @@ function PlayerHelper.new()
     self.Pollen = self.pollenStat.Value
     self.Honey = self.honeyStat.Value
     self.Capacity = self.capacityStat.Value
-    
+    self:getPlayerStats()
     -- Initialize character references
     self:updateCharacterReferences(self.localPlayer.Character or self.localPlayer.CharacterAdded:Wait())
     
@@ -43,6 +44,7 @@ function PlayerHelper:updateCharacterReferences(character)
         
         local defaultProps = PhysicalProperties.new(2, 1, 0.8, 0.1, 0.2)
         self.rootPart.CustomPhysicalProperties = defaultProps
+        self.localPlayer.CameraMaxZoomDistance = 300
     else
         self.humanoid = nil
         self.rootPart = nil
@@ -67,6 +69,7 @@ function PlayerHelper:setupConnections()
     -- Connect to initial humanoid if it exists
     if self.humanoid then
         self.humanoidConnection = self.humanoid.Died:Connect(function()
+            self:onPlayerDied()
             self:updateCharacterReferences(nil)
         end)
 
@@ -162,18 +165,30 @@ function PlayerHelper:isValid()
            self.rootPart and self.humanoid.Health > 0
 end
 
+
 function PlayerHelper:stopMoving()
-    if not self:isValid() then return false end
-    
-    -- Stop all movement by setting velocity to zero
-    self.rootPart.Velocity = Vector3.new(0, 0, 0)
-    self.rootPart.RotVelocity = Vector3.new(0, 0, 0)
-    self.humanoid:Move(Vector3.new(0, 0, 0))
+    self.blockedParts = self.blockedParts and self.blockedParts or {}
+    if not self:isValid() then return end
 
+    if self.tweenMonitorConnection then
+        self.tweenMonitorConnection:Disconnect()
+        self.tweenMonitorConnection = nil
+    end
 
-    return true
+    if #self.blockedParts > 0 then
+        for _, part in ipairs(self.blockedParts) do
+            if part and part:IsDescendantOf(workspace) then
+                part.CanCollide = true
+            end
+        end
+        self.blockedParts = {}
+    end
+
+    self.humanoid:Move(Vector3.zero)
+    self.humanoid:MoveTo(self.rootPart.Position)
+    self:setCharacterAnchored(false)
+    self:disableWalking(false)
 end
-
 function PlayerHelper:setCharacterAnchored(state)
     if not self:isValid() then return end
     self.rootPart.Anchored = state
@@ -289,6 +304,36 @@ function PlayerHelper:getPlayerStats()
     return self.plrStats
 end
 
+function PlayerHelper:getInventoryItem(itemName)
+    local cleanName = string.lower(string.gsub(itemName, "%s+", ""))
+    local playerData = self.plrStats
+    if not playerData then 
+        warn("Player data not found.")
+        return 0 
+    end
+    local inventory = playerData.Eggs
+    if not inventory then
+        warn("inventory not found")
+        return 0
+    end
+
+    -- Normalize inventory keys
+    local normalizedInventory = {}
+    for key, value in pairs(inventory) do
+        local cleanKey = string.lower(string.gsub(key, "%s+", ""))
+        normalizedInventory[cleanKey] = value
+    end
+
+    local item = normalizedInventory[cleanName] or 0
+    if item then
+        return item
+    end
+    
+    warn("item not found")
+    return 0
+end
+
+
 function PlayerHelper:equipMask(mask)
     mask = mask or (shared.main and shared.main.Equip and shared.main.Equip.defaultMask)
 
@@ -372,13 +417,20 @@ function PlayerHelper:getActivePlanter()
 end
 
 function PlayerHelper:getPlanterToPlace()
-    local allPlanters = self:getActivePlanter()
+    local activePlanters = self:getActivePlanter()
     local slots = shared.main.Planter.Slots
 
     for _, slot in ipairs(slots) do
         if slot.PlanterType == "None" then continue end
+        local planterFullname = self:getPlanterFullName(slot.PlanterType)
+        local planterAmount = self:getInventoryItem(planterFullname)
+
+        if planterAmount == 0 then
+            continue
+        end
+
         local found = false
-        for _, planter in ipairs(allPlanters) do
+        for _, planter in ipairs(activePlanters) do
             if planter.Type == slot.PlanterType then
                 found = true
                 break
@@ -414,12 +466,25 @@ function PlayerHelper:getPlanterFullName(shortName)
     return fullNameMap[shortName] or (shortName .. " Planter")
 end
 function PlayerHelper:getScreenGui()
+    local ScreenGui = nil
     local plyerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui", true)
     for index, gui in plyerGui:GetChildren() do
         if gui and gui:FindFirstChild("ActivateButton") then
-            return gui
+            ScreenGui = gui
         end
     end
+    if ScreenGui then
+        local ShopGui = ScreenGui.Shop
+        local Scroller = ShopGui.Scroller
+        local BuyButton: TextButton = Scroller.BuyButton
+        BuyButton.MouseButton1Click:Connect(function()
+            self:getPlayerStats()
+            local paperAmount = self:getInventoryItem('PaperPlanter')
+            print("player cratf/buy something", paperAmount)
+        end)
+        return ScreenGui
+    end
+
     return nil
 end
 
@@ -437,6 +502,32 @@ function PlayerHelper:click(pos)
     VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 0)
 
 end
+
+function PlayerHelper:onPlayerDied()
+    local Bot = shared.Bot
+
+    if Bot and Bot.isRunning then
+        Bot:stop()
+    end
+
+    print("Player has died. Waiting for respawn...")
+
+    -- Wait for new character
+    self.localPlayer.CharacterAdded:Wait()
+    shared.FluentUI.Fluent:Notify({
+        Title = "Bot", 
+        Content = "Player respawned. Bot will start in 3 seconds...", 
+        Duration = 3
+    })
+
+    task.wait(3)
+    if Bot and not Bot.isRunning then
+        Bot:start()
+    end
+end
+
+
+
 function PlayerHelper:destroy()
     if self.characterConnection then self.characterConnection:Disconnect() end
     if self.humanoidConnection then self.humanoidConnection:Disconnect() end
