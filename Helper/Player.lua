@@ -62,17 +62,13 @@ function PlayerHelper:setupConnections()
         end
         
         self.humanoidConnection = self.humanoid.Died:Connect(function()
+            self:onPlayerDied()
             self:updateCharacterReferences(nil)
         end)
     end)
     
     -- Connect to initial humanoid if it exists
     if self.humanoid then
-        self.humanoidConnection = self.humanoid.Died:Connect(function()
-            self:onPlayerDied()
-            self:updateCharacterReferences(nil)
-        end)
-
         if self._enforceStatsConnection then
             self._enforceStatsConnection:Disconnect()
         end
@@ -161,8 +157,7 @@ end
 
 
 function PlayerHelper:isValid()
-    return self.localPlayer and self.character and self.humanoid and 
-           self.rootPart and self.humanoid.Health > 0
+    return self.character and self.humanoid and self.rootPart and self.humanoid.Health > 0
 end
 
 
@@ -196,7 +191,7 @@ end
 
 
 function PlayerHelper:tweenTo(targetPosition, duration, callback)
-    if not self:isValid() then return false end
+    if not self:isValid() then return false, "Character is not valid" end
 
     self:setCharacterAnchored(true)
 
@@ -265,7 +260,7 @@ function PlayerHelper:tweenTo(targetPosition, duration, callback)
     end)
 
     tween:Play()
-    return true
+    return true, 'successful tween'
 end
 
 function PlayerHelper:isPlayerInField(field)
@@ -295,9 +290,9 @@ function PlayerHelper:getPlayerStats()
         return {}
     end
     self.plrStats = plrStats
-    self.Honeycomb = plrStats.Honeycomb
+    self.Honeycomb = plrStats.Honeycomb or {}
     self.Accessories = plrStats.Accessories or {}
-    self.EquippedSprinkler = plrStats.EquippedSprinkler
+    self.EquippedSprinkler = plrStats.EquippedSprinkler or nil
 
 
     writefile("playerStats.json", HttpService:JSONEncode(plrStats))
@@ -505,23 +500,23 @@ end
 
 function PlayerHelper:onPlayerDied()
     local Bot = shared.Bot
-
-    if Bot and Bot.isRunning then
+    local shouldRestart = Bot and Bot.isRunning  -- Store the state before stopping
+    
+    if shouldRestart then
         Bot:stop()
-    end
 
-    print("Player has died. Waiting for respawn...")
-
-    -- Wait for new character
-    self.localPlayer.CharacterAdded:Wait()
-    shared.FluentUI.Fluent:Notify({
-        Title = "Bot", 
-        Content = "Player respawned. Bot will start in 3 seconds...", 
-        Duration = 3
-    })
-
-    task.wait(3)
-    if Bot and not Bot.isRunning then
+        print("Player has died. Waiting for respawn...")
+        
+        -- Wait for new character
+        self.localPlayer.CharacterAdded:Wait()
+        
+        shared.FluentUI.Fluent:Notify({
+            Title = "Bot", 
+            Content = "Player respawned. Bot will start in 3 seconds...", 
+            Duration = 3
+        })
+        
+        task.wait(3)  -- Give time for character to fully load
         Bot:start()
     end
 end

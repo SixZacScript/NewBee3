@@ -25,13 +25,16 @@ function TaskManager:returnToField(data)
     local fieldPosition = data.Position + Vector3.new(0, 4, 0)
     local thread = coroutine.running()
 
-    player:tweenTo(fieldPosition, 1, function()
+    local result, msg = player:tweenTo(fieldPosition, 1, function()
         task.wait(.5)
         
         if data.Callback and typeof(data.Callback) == "function" then data.Callback() end
-        coroutine.resume(thread)
+        coroutine.resume(thread, true)
     end)
-
+    if not result then
+        warn("Failed to tween character", msg)
+        coroutine.resume(thread, false)
+    end
     return coroutine.yield()
 end
 function TaskManager:harvestPlanter(targetPlanter)
@@ -199,27 +202,52 @@ function TaskManager:farming(currentField , options)
         end,
     })
 end
+
 function TaskManager:doJumping()
     local playerHelper = self.bot.plr
     playerHelper:stopMoving()
 
     while self.bot.isRunning do
         local currentMonsterCount = self.bot.monsterHelper:getCloseMonsterCount()
-        
         if currentMonsterCount == 0 then
             return true
         end
-        
-        -- Perform jump using humanoid
-        local humanoid = playerHelper.humanoid
-        if humanoid then
-            humanoid.Jump = true
+
+        local monster = self.bot.monsterHelper:getClosestMonster()
+        local char = playerHelper.character
+
+        if char then
+            local root = playerHelper.rootPart
+            local humanoid = playerHelper.humanoid
+            local monsterRoot = monster and monster.PrimaryPart
+
+            if root and humanoid and monsterRoot then
+                local offset = monsterRoot.Position - root.Position
+                local horizontalOffset = Vector3.new(offset.X, 0, offset.Z)
+                local distance = horizontalOffset.Magnitude
+
+                if distance <= 20 then
+                    local escapeDir = -horizontalOffset.Unit
+                    local escapePos = root.Position + escapeDir * 5
+
+                    -- Teleporting a test part to visualize might help debug
+                    humanoid:MoveTo(escapePos)
+
+                    -- Wait for the bot to complete movement or timeout
+                    humanoid.MoveToFinished:Wait()
+                end
+
+                humanoid.Jump = true
+            end
         end
-        
+
         task.wait(1.25)
     end
+
     return true
 end
+
+
 function TaskManager:doFarming(currentField)
     if self.connections.tokenRunService then
         self.connections.tokenRunService:Disconnect()
@@ -237,7 +265,6 @@ function TaskManager:doFarming(currentField)
     end
 
   
-
     self:farming(currentField)
 end
 

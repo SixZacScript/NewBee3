@@ -1,3 +1,4 @@
+
 local FluentHelper = {}
 FluentHelper.__index = FluentHelper
 
@@ -9,6 +10,7 @@ function FluentHelper.new()
     self:_setupWindow()
     self:_createTabs()
     self:_initializeAllTabs()
+    self:_detectPlatformAndSetupUI()
     self:_setupAntiAFK()
     return self
 end
@@ -96,6 +98,7 @@ function FluentHelper:_setupManagers()
     self.Window:SelectTab(1)
     self.SaveManager:LoadAutoloadConfig()
 
+
 end
 
 function FluentHelper:_setupAntiAFK()
@@ -110,5 +113,53 @@ function FluentHelper:_setupAntiAFK()
         task.wait(1)
         virtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
     end)
+end
+function FluentHelper:createFloatingButton()
+    local button = Instance.new("TextButton")
+    button.Name = "FloatingButton"
+    button.Size = UDim2.fromOffset(100, 40)
+    button.Position = UDim2.new(1, -110, 1, -50)
+    button.AnchorPoint = Vector2.new(1, 1)
+    button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    button.TextColor3 = Color3.new(1, 1, 1)
+    button.Text = "Open UI"
+    button.ZIndex = 999
+    button.Parent = game.Players.LocalPlayer.PlayerGui:FindFirstChild("ScreenGui")
+
+    local dragging = false
+    local dragStart, startPos
+
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = button.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    button.MouseButton1Click:Connect(function()
+        self.Window:Minimize()
+    end)
+end
+function FluentHelper:_detectPlatformAndSetupUI()
+    local UserInputService = game:GetService("UserInputService")
+
+    local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+    if isMobile then
+        self:createFloatingButton()
+    end
 end
 return FluentHelper

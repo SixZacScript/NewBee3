@@ -6,6 +6,7 @@ ModuleLoader.helperFiles = {
     "Helper/Hive.lua",
     "Helper/Token.lua",
     "Helper/Hide.lua",
+    "Helper/Gui.lua",
 }
 
 function ModuleLoader:load(path)

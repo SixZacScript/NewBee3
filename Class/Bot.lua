@@ -26,9 +26,10 @@ function Bot.new()
     self.Field = shared.Helpers.Field
     self.plr = shared.Helpers.Player
     self.tokenHelper = shared.Helpers.Token
+    self.botGui = shared.Helpers.Gui
     self.taskManager = TaskManager.new(self)
     self.monsterHelper = MonsterHelper.new()
-
+    print("bot intialed")
     self.currentField = self.Field:getField()
     return self
 end
@@ -66,8 +67,10 @@ end
 
 function Bot:stop()
     self.isRunning = false
+    self.state = Bot.State.IDLE
     self.plr:stopMoving()
     self:cleanup()
+    self.botGui:updateStatus('Stop')
 end
 
 function Bot:evaluateState()
@@ -78,6 +81,7 @@ function Bot:evaluateState()
     else
         self.state = Bot.State.FARM
     end
+    self.botGui:updateStatus(self.state)
 end
 
 function Bot:executeState()
@@ -113,8 +117,7 @@ function Bot:moveTo(targetPosition, options)
     options = options or {}
     
     if not self.plr:isValid() then 
-        warn("Movement validation failed")
-        return false 
+        return false, "Movement validation failed"
     end
     
     -- Check if already close to target
