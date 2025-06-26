@@ -1,0 +1,192 @@
+local Services = {
+    Workspace = game:GetService("Workspace"),
+    TweenService = game:GetService("TweenService"),
+    RunService = game:GetService("RunService"),
+    ReplicatedStorage = game:GetService("ReplicatedStorage"),
+    VirtualInputManager = game:GetService("VirtualInputManager"),
+}
+
+local TaskManager = {}
+TaskManager.__index = TaskManager
+function TaskManager.new(bot)
+    local self = setmetatable({}, TaskManager)
+    self.bot = bot
+    self.placedField = nil
+    self.connections = {}
+
+    return self
+end
+
+function TaskManager:returnToField(data)
+    if not data.Position then return warn('Failed returnToField becuz Position is nil') end
+    if not data.Player then return warn('Failed returnToField player not found') end
+
+    local player = data.Player
+    local fieldPosition = data.Position + Vector3.new(0, 4, 0)
+    local thread = coroutine.running()
+
+    player:tweenTo(fieldPosition, 1, function()
+        task.wait(.5)
+        
+        if data.Callback and typeof(data.Callback) == "function" then data.Callback() end
+        coroutine.resume(thread)
+    end)
+
+    return coroutine.yield()
+end
+function TaskManager:harvestPlanter(targetPlanter)
+    local playerHelper = self.bot.plr
+    local thread = coroutine.running()
+    if not targetPlanter then 
+        warn("There is no target planter found.")
+        return coroutine.resume(thread, false)
+    end
+
+    local planterPos = targetPlanter.Position
+    local planterFullname = playerHelper:getPlanterFullName(targetPlanter.Type)
+    local targetField = shared.Helpers.Field:getFieldByPosition(planterPos)
+    local EventCmd = game:GetService("ReplicatedStorage").Events
+    local harvestEvt = EventCmd.PlanterModelCollect
+    local placeEvt = EventCmd.PlayerActivesCommand
+    
+    playerHelper:tweenTo(planterPos + Vector3.new(0, 3, 0), 1, function()
+        task.wait(1)
+        harvestEvt:FireServer(targetPlanter.ActorID)
+
+        task.wait(1)
+        placeEvt:FireServer({ Name = planterFullname })
+
+        local startTime = os.clock()
+        while os.clock() - startTime < 10 do
+            self:doFarming(targetField)
+            task.wait() 
+        end
+        return coroutine.resume(thread, true)
+    end)
+
+    return coroutine.yield()
+end
+
+
+function TaskManager:placePlanter()
+    local thread = coroutine.running()
+    local playerHelper = self.bot.plr
+    local planterToPlace = playerHelper:getPlanterToPlace() -- is slot
+    if not planterToPlace or not planterToPlace.Field then 
+        return coroutine.resume(thread, false)
+    end
+
+    local targetField = planterToPlace.Field
+    local originalFieldName = shared.Helpers.Field:getOriginalFieldName(targetField)
+
+
+    local fieldPart = shared.Helpers.Field:getField(originalFieldName)
+    local EventCmd = game:GetService("ReplicatedStorage").Events
+    local placeEvt = EventCmd.PlayerActivesCommand
+
+
+    local fullName = playerHelper:getPlanterFullName(planterToPlace.PlanterType)
+    playerHelper:tweenTo(fieldPart.Position + Vector3.new(0, 3, 0), 1, function()
+
+        task.wait(1)
+        placeEvt:FireServer({ Name = fullName })
+        playerHelper:getActivePlanter()
+
+        return coroutine.resume(thread, true)
+    end)
+
+    return coroutine.yield()
+end
+
+function TaskManager:doFarming(currentField)
+    if self.connections.tokenRunService then
+        self.connections.tokenRunService:Disconnect()
+        self.connections.tokenRunService = nil
+    end
+
+    if not self.bot.plr:isPlayerInField(currentField) then
+        self:returnToField({Player = self.bot.plr, Position = currentField.Position})
+    end
+
+    local token = self.bot.tokenHelper:getBestTokenByField(currentField)
+    local targetPos = (token and not token.touched) and token.position or self.bot.Field:getRandomFieldPosition(currentField)
+    self.bot:moveTo(targetPos, {
+        onBreak = function(shouldBreak)
+            local runService = game:GetService("RunService")
+            self.connections.tokenRunService = runService.Heartbeat:Connect(function()
+                local newToken = self.bot.tokenHelper:getBestTokenByField(currentField)
+                if newToken and not newToken.touched and newToken ~= token then
+                    -- FIX: Clean up the connection properly
+                    if self.connections.tokenRunService then
+                        self.connections.tokenRunService:Disconnect()
+                        self.connections.tokenRunService = nil
+                    end
+                    if shouldBreak then shouldBreak() end
+                end
+            end)
+            
+            return self.connections.tokenRunService
+        end,
+    })
+end
+
+function TaskManager:convertPollen()
+    local player = self.bot.plr
+    if not player:isCapacityFull() then
+        return false
+    end
+
+    local bot = self.bot
+    local Hive = shared.Helpers.Hive
+    local thread = coroutine.running()
+
+    if shared.main.auto.autoHoneyMask then
+        player:equipMask("Honey Mask")
+    end
+
+    local function shouldContinueConverting()
+        if not shared.main.autoConvertBalloon then
+            return player.Pollen > 0
+        end
+
+        local balloonValue, balloonBlessing = Hive:getBalloonData()
+        balloonValue = balloonValue or 0
+        balloonBlessing = balloonBlessing or 0
+        return player.Pollen > 0 or (balloonValue > 0 and balloonBlessing >= (shared.main.convertAtBlessing or 1))
+    end
+
+    local convertButton = player.gameGUi.ActivateButton
+    local convertEvent =  Services.ReplicatedStorage.Events.PlayerHiveCommand
+    player:tweenTo(Hive:getHivePosition(), 1, function()
+        if not bot.isRunning then
+            warn("bot is not running")
+            return coroutine.resume(thread, false)
+        end
+
+        player:disableWalking(true)
+        convertEvent:FireServer("ToggleHoneyMaking") -- trigger convert event
+
+        local startTime = tick()
+        local timeout = 300
+
+        while shouldContinueConverting() and bot.isRunning and (tick() - startTime < timeout) and bot.state == bot.State.Convert do
+            if convertButton and convertButton.BackgroundColor3 ~= Color3.fromRGB(201, 39, 28) and player.Pollen > 0 then
+                convertEvent:FireServer("ToggleHoneyMaking")
+            end
+            task.wait()
+        end
+
+        player:disableWalking(false)
+
+        if bot.isRunning then
+            task.wait(4)
+        end
+
+        player:equipMask()
+        coroutine.resume(thread, true)
+    end)
+
+    return coroutine.yield()
+end
+
+return TaskManager
