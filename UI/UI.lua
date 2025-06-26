@@ -1,4 +1,5 @@
 
+local UserInputService = game:GetService('UserInputService')
 local FluentHelper = {}
 FluentHelper.__index = FluentHelper
 
@@ -10,7 +11,6 @@ function FluentHelper.new()
     self:_setupWindow()
     self:_createTabs()
     self:_initializeAllTabs()
-    self:_detectPlatformAndSetupUI()
     self:_setupAntiAFK()
     return self
 end
@@ -28,20 +28,30 @@ function FluentHelper:_initializeCore()
         {name = "Settings", title = "Setting", icon = "settings"}
     }
 end
-
 function FluentHelper:_setupWindow()
+    local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+    local width, height, tabWidth
     local viewportSize = workspace.CurrentCamera.ViewportSize
 
-    local width = math.clamp(viewportSize.X * 0.6, 300, 600)
-    local height = math.clamp(viewportSize.Y * 0.6, 300, 500)
+    if isMobile then
+        width = math.clamp(viewportSize.X * 0.9, 300, 500)
+        height = math.clamp(viewportSize.Y * 0.5, 300, 400)
+        tabWidth = 100
+        self:createFloatingButton()
+    else
+        width = math.clamp(viewportSize.X * 0.6, 300, 600)
+        height = math.clamp(viewportSize.Y * 0.6, 300, 500)
+        tabWidth = 160
+    end
 
     self.Window = self.Fluent:CreateWindow({
         Title = "Fluent",
         SubTitle = "by dawid",
-        TabWidth = 160,
+        TabWidth = tabWidth,
         Size = UDim2.fromOffset(width, height),
         Acrylic = true,
-        Theme = "Darker",
+        Theme = "MinimalDark",
         MinimizeKey = Enum.KeyCode.F
     })
 end
@@ -117,13 +127,32 @@ end
 function FluentHelper:createFloatingButton()
     local button = Instance.new("TextButton")
     button.Name = "FloatingButton"
-    button.Size = UDim2.fromOffset(100, 40)
-    button.Position = UDim2.new(1, -110, 1, -50)
-    button.AnchorPoint = Vector2.new(1, 1)
-    button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    button.TextColor3 = Color3.new(1, 1, 1)
+    button.Size = UDim2.fromOffset(80, 50)
+    button.Position = UDim2.new(1, -20, 0, 20)
+    button.AnchorPoint = Vector2.new(1, 0)
+
+    
+    -- Background styling
+    button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    button.AutoButtonColor = false
     button.Text = "Open UI"
+    button.TextColor3 = Color3.fromRGB(230, 230, 230)
+    button.Font = Enum.Font.GothamSemibold
+    button.TextScaled = true
     button.ZIndex = 999
+
+    -- Rounded corners
+    local uicorner = Instance.new("UICorner", button)
+    uicorner.CornerRadius = UDim.new(0, 12)
+
+    -- Hover effect
+    button.MouseEnter:Connect(function()
+        button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    end)
+    button.MouseLeave:Connect(function()
+        button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    end)
+
     button.Parent = game.Players.LocalPlayer.PlayerGui:FindFirstChild("ScreenGui")
 
     local dragging = false
@@ -153,13 +182,5 @@ function FluentHelper:createFloatingButton()
         self.Window:Minimize()
     end)
 end
-function FluentHelper:_detectPlatformAndSetupUI()
-    local UserInputService = game:GetService("UserInputService")
 
-    local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-
-    if isMobile then
-        self:createFloatingButton()
-    end
-end
 return FluentHelper
