@@ -1,6 +1,7 @@
 local HttpService = game:GetService("HttpService")
 local UIS = game:GetService("UserInputService")
 
+local isMobile = UIS.TouchEnabled and not UIS.KeyboardEnabled
 local a, b = {
     {
         1, 'ModuleScript', {'MainModule'}, {
@@ -847,8 +848,8 @@ local aa = {
             s:onStep(function(t)
                 r.Root.Position = UDim2.new(t.Scale, t.Offset, 0, 0)
             end)
-            j.AddSignal(r.CloseButton.MouseButton1Click,
-                        function() r:Close() end)
+            j.AddSignal(r.CloseButton.MouseButton1Click,function()r:Close()
+            end)
             function r.Open(t)
                 local u = r.LabelHolder.AbsoluteSize.Y
                 r.Holder.Size = UDim2.new(1, 0, 0, 58 + u)
@@ -1222,7 +1223,7 @@ local aa = {
                     BackgroundTransparency = 1
                 }, {
                     l('UIListLayout', {
-                        Padding = UDim.new(0, 5),
+                        Padding = UDim.new(0, 16),
                         FillDirection = Enum.FillDirection.Horizontal,
                         SortOrder = Enum.SortOrder.LayoutOrder
                     }), l('TextLabel', {
@@ -2362,7 +2363,10 @@ local aa = {
                         P(N and 0.89 or 1)
                     end)
                     c.AddSignal(M.MouseButton1Down, function()
-
+                        if not isMobile then
+                            l.Close()
+                        end
+                        print("on item clicked?")
                         P(0.92)
                     end)
                     c.AddSignal(M.MouseButton1Up,

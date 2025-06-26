@@ -91,6 +91,29 @@ function mainTab:load(FluentUI)
             shared.main.auto.autoFarmSprout = val
         end
     })
+
+    local playerHelper = shared.Helpers.Player
+    local equipedMask = playerHelper:getEquippedMask()
+    local maskIndex =  playerHelper:getMaskIndex(equipedMask) or 1
+    local farmSettinSection = self.Tab:AddSection("Convert Setting")
+    self.autoHoneyMask = farmSettinSection:AddToggle("autoHoneyMask", {
+        Title = "Auto Honey Mask",
+        Description = "Automatically equip Honey Mask when converting",
+        Default = shared.main.auto.autoHoneyMask,
+        Callback = function(val)
+            shared.main.auto.autoHoneyMask = val
+        end
+    })
+    self.defaultMask = farmSettinSection:AddDropdown("defaultMask", {
+        Title = "Default mask",
+        Values = playerHelper:getPlayerMasks(),
+        Multi = false,
+        Default = maskIndex,
+        Callback = function(mask)
+            shared.main.Equip.defaultMask = mask
+            playerHelper:equipMask(mask)
+        end
+    })
     return self
 end
 function mainTab:startAutoDigLoop()

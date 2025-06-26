@@ -327,7 +327,47 @@ function PlayerHelper:getInventoryItem(itemName)
     warn("item not found")
     return 0
 end
+function PlayerHelper:getPlayerMasks()
+    local masks = {
+        "Helmet", "Propeller Hat", "Beekeeper's Mask",
+        "Bubble Mask", "Fire Mask", "Honey Mask",
+        "Diamond Mask", "Gummy Mask", "Demon Mask"
+    }
 
+    local playerMasks = {}
+
+    if not self or type(self) ~= "table" or not self.Accessories then
+        warn("PlayerHelper:getPlayerMasks - self.Accessories is nil or invalid")
+        return playerMasks
+    end
+
+    for _, mask in pairs(self.Accessories) do
+        if typeof(mask) == "string" and table.find(masks, mask) then
+            table.insert(playerMasks, mask)
+        end
+    end
+
+    return playerMasks
+end
+function PlayerHelper:getEquippedMask()
+    local plrStats = self.plrStats
+    if not plrStats then return nil end
+
+    local EquippedAccessories = plrStats.EquippedAccessories
+    if not EquippedAccessories then return nil end
+
+    return EquippedAccessories.Hat or nil
+end
+
+function PlayerHelper:getMaskIndex(maskName)
+    local playerMasks = self:getPlayerMasks()
+    for i, name in ipairs(playerMasks) do
+        if name == maskName then
+            return i
+        end
+    end
+    return nil 
+end
 
 function PlayerHelper:equipMask(mask)
     mask = mask or (shared.main and shared.main.Equip and shared.main.Equip.defaultMask)
@@ -474,8 +514,9 @@ function PlayerHelper:getScreenGui()
         local BuyButton: TextButton = Scroller.BuyButton
         BuyButton.MouseButton1Click:Connect(function()
             self:getPlayerStats()
-            local paperAmount = self:getInventoryItem('PaperPlanter')
-            print("player cratf/buy something", paperAmount)
+            if shared.FluentUI then
+                shared.FluentUI.main.defaultMask:SetValue(self:getPlayerMasks()) --refresh value for dorpdown
+            end
         end)
         return ScreenGui
     end
