@@ -232,15 +232,7 @@ function Bot:waitForMovement(timeout, onBreak)
         if tick() - startTime > timeout then
             cleanupConnections(connections)
             self.plr:stopMoving() -- Stop movement on timeout
-            warn("⏱️ MoveTo timeout")
-            return true
-        end
-        
-        if not self.plr:isValid() then
-            cleanupConnections(connections)
-            self.plr:stopMoving() -- Stop movement if player invalid
-            warn("Player became invalid during movement")
-            return true
+            return false, 'timeout'
         end
         
         task.wait()

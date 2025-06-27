@@ -36,7 +36,7 @@ function TaskManager:returnToField(position, Callback)
         coroutine.resume(thread, true)
     end)
     if not result then
-        warn("Failed to tween character", msg)
+        warn("Failed to tween: ", msg)
         coroutine.resume(thread, false)
     end
     return coroutine.yield()
@@ -156,7 +156,29 @@ function TaskManager:performCleanupCollection(field, options)
     end
 end
 
-function TaskManager:farming(currentField , options)
+function TaskManager:farming(currentField, options)
+    -- Early exit if bot is not running
+    if not self.bot.isRunning then
+        return false 
+    end
+
+    -- Clean up existing connection
+    if self.connections.tokenRunService then
+        self.connections.tokenRunService:Disconnect()
+        self.connections.tokenRunService = nil
+    end
+    
+    -- Get initial token and target position
+    local token = self.bot.tokenHelper:getBestTokenByField(currentField, options)
+    local targetPos = (token and not token.touched) and token.position 
+                     or self.bot.Field:getRandomFieldPosition(currentField)
+    
+    -- Handle monsters before movement
+    if self.bot.monsterHelper:getCloseMonsterCount() > 0 then
+        self:doJumping()
+    end
+    
+    -- Cleanup helper
     local function cleanup(shouldBreak)
         if self.connections.tokenRunService then
             self.connections.tokenRunService:Disconnect()
@@ -164,39 +186,30 @@ function TaskManager:farming(currentField , options)
         end
         if shouldBreak then shouldBreak() end
     end
-    if not self.bot.isRunning then
-        return false 
-    end
-
-    if self.connections.tokenRunService then cleanup() end
-    
-    local token = self.bot.tokenHelper:getBestTokenByField(currentField, options)
-    local targetPos = (token and not token.touched) and token.position or self.bot.Field:getRandomFieldPosition(currentField)
-    
-    -- Check monster count before starting movement
-    local monsterCount = self.bot.monsterHelper:getCloseMonsterCount()
-    if monsterCount > 0 then
-        self:doJumping()
-    end
-    
-    -- Cleanup method to avoid code duplication
-
     
     self.bot:moveTo(targetPos, {
         onBreak = function(shouldBreak)
             local runService = game:GetService("RunService")
+            
             self.connections.tokenRunService = runService.Heartbeat:Connect(function()
-                -- Check monster count in runService
-                local currentMonsterCount = self.bot.monsterHelper:getCloseMonsterCount()
-                if currentMonsterCount > 0 then
-                    self:doJumping()
+                -- Early exit if bot stopped
+                if not self.bot.isRunning then
                     cleanup(shouldBreak)
-                    return self.connections.tokenRunService
+                    return
                 end
                 
-                local newToken = self.bot.tokenHelper:getBestTokenByField(currentField)
-                if newToken and not newToken.touched and newToken ~= token or not self.bot.isRunning then
+                -- Handle monsters
+                if self.bot.monsterHelper:getCloseMonsterCount() > 0 then
+                    self:doJumping()
                     cleanup(shouldBreak)
+                    return
+                end
+                
+                -- Check for better token
+                local newToken = self.bot.tokenHelper:getBestTokenByField(currentField)
+                if newToken and not newToken.touched and newToken ~= token then
+                    cleanup(shouldBreak)
+                    return
                 end
             end)
             

@@ -46,6 +46,13 @@ function PlayerHelper:updateCharacterReferences(character)
         local defaultProps = PhysicalProperties.new(2, 1, 0.8, 0.1, 0.2)
         self.rootPart.CustomPhysicalProperties = defaultProps
         self.localPlayer.CameraMaxZoomDistance = 500
+
+        print("player respawned or created")
+        if self.humanoidConnection then self.humanoidConnection:Disconnect() end
+        self.humanoidConnection = self.humanoid.Died:Connect(function()
+            self:onPlayerDied()
+        end)
+
     else
         self.humanoid = nil
         self.rootPart = nil
@@ -56,16 +63,6 @@ function PlayerHelper:setupConnections()
     -- Character management
     self.characterConnection = self.localPlayer.CharacterAdded:Connect(function(character)
         self:updateCharacterReferences(character)
-        
-        -- Connect to new humanoid's Died event
-        if self.humanoidConnection then
-            self.humanoidConnection:Disconnect()
-        end
-        
-        self.humanoidConnection = self.humanoid.Died:Connect(function()
-            self:onPlayerDied()
-            self:updateCharacterReferences(nil)
-        end)
     end)
     
     -- Connect to initial humanoid if it exists
@@ -554,13 +551,14 @@ end
 function PlayerHelper:onPlayerDied()
     local Bot = shared.Bot
     local shouldRestart = Bot and Bot.isRunning  -- Store the state before stopping
-    
+
     if shouldRestart then
         Bot:stop()
 
         print("Player has died. Waiting for respawn...")
         
         -- Wait for new character
+        
         self.localPlayer.CharacterAdded:Wait()
         
         shared.FluentUI.Fluent:Notify({

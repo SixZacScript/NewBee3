@@ -70,9 +70,10 @@ function TokenHelper:handleAddedToken(tokenParams, tokenType)
         local isInBound = self:isPositionInBounds(position, fieldPart)
         if isInBound then
             newToken.tokenField = fieldPart
+            break
         end
     end
-
+    
     task.delay(duration, function()
         self:removeToken(serverID)
     end)

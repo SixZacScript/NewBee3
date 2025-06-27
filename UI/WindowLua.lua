@@ -2363,7 +2363,7 @@ local aa = {
                         P(N and 0.89 or 1)
                     end)
                     c.AddSignal(M.MouseButton1Down, function()
-                        if not isMobile then
+                        if not isMobile and not j.Multi then
                             l.Close()
                         end
                         P(0.92)
