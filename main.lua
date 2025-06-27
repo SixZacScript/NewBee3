@@ -9,53 +9,7 @@ end
 if not shared.isGithub then
     loadstring(game:HttpGet('https://raw.githubusercontent.com/DarkNetworks/Infinite-Yield/main/latest.lua'))()
 end
-shared.main = {
-    auto = {
-        autoFarm = false,
-        autoDig = false,
-        autoSprinkler = false,
-        autoPlanter = false,
-        autoFarmSprout = false,
-        autoHoneyMask = false,
-        autoClock = false,
-    },
-    farm = {
-        farmBubble = false,
-        ignoreHoneyToken = false,
-        priorityTokens = {},
-    },
-    Planter = {
-        Slots = {
-            {
-                PlanterType = "None",
-                Field = nil,
-                HarvestAt = 100,
-                Placed = false,
-            },
-            {
-                PlanterType = "None",
-                Field = nil,
-                HarvestAt = 100,
-                Placed = false,
-            },
-            {
-                PlanterType = "None",
-                Field = nil,
-                HarvestAt = 100,
-                Placed = false,
-            }
-        },
-        Actives = {}
-    },
-    Equip = {
-        defaultMask = nil
-    },
-    hideDecorations = false,
-    WalkSpeed = 70,
-    JumpPower = 80,
-}
-
-
+shared.main = shared.ModuleLoader:load('Data/State.lua')
 shared.Data = {
     TokenData = shared.ModuleLoader:load('Data/Token.lua')
 }
