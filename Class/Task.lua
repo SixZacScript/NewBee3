@@ -1,3 +1,4 @@
+local MovementModule = shared.ModuleLoader:load('Class/Movement.lua')
 local placeSprinklerEvent = game:GetService("ReplicatedStorage").Events.PlayerActivesCommand
 local Services = {
     Workspace = game:GetService("Workspace"),
@@ -177,45 +178,23 @@ function TaskManager:farming(currentField, options)
     if self.bot.monsterHelper:getCloseMonsterCount() > 0 then
         self:doJumping()
     end
-    
-    -- Cleanup helper
-    local function cleanup(shouldBreak)
-        if self.connections.tokenRunService then
-            self.connections.tokenRunService:Disconnect()
-            self.connections.tokenRunService = nil
+    local playerHelper = shared.Helpers.Player
+    local movement = MovementModule.new(playerHelper.humanoid)
+    movement:SetOnStep(function()
+        if not self.bot.isRunning then
+            movement:Stop()
         end
-        if shouldBreak then shouldBreak() end
-    end
-    
-    self.bot:moveTo(targetPos, {
-        onBreak = function(shouldBreak)
-            local runService = game:GetService("RunService")
-            
-            self.connections.tokenRunService = runService.Heartbeat:Connect(function()
-                -- Early exit if bot stopped
-                if not self.bot.isRunning then
-                    cleanup(shouldBreak)
-                    return
-                end
-                
-                -- Handle monsters
-                if self.bot.monsterHelper:getCloseMonsterCount() > 0 then
-                    self:doJumping()
-                    cleanup(shouldBreak)
-                    return
-                end
-                
-                -- Check for better token
-                local newToken = self.bot.tokenHelper:getBestTokenByField(currentField)
-                if newToken and not newToken.touched and newToken ~= token then
-                    cleanup(shouldBreak)
-                    return
-                end
-            end)
-            
-            return self.connections.tokenRunService
-        end,
-    })
+        if self.bot.monsterHelper:getCloseMonsterCount() > 0 then
+            movement:Stop()
+        end
+
+        local newToken = self.bot.tokenHelper:getBestTokenByField(currentField)
+        if newToken and not newToken.touched and newToken ~= token then
+            movement:Stop()
+        end
+    end)
+
+    local success, reason = movement:MoveTo(targetPos)
 end
 
 function TaskManager:doJumping()
@@ -364,8 +343,14 @@ function TaskManager:doPlaceSprinkler(field, sprinklerData)
         if self.sprinkler.placedCount >= maxToPlace then break end
         if not playerHelper:isValid() or not self.bot.isRunning then break end
 
-        local reached = self.bot:moveTo(pos)
-        if not reached then continue end
+        local playerHelper = shared.Helpers.Player
+        local movement = MovementModule.new(playerHelper.humanoid)
+        local success, reason = movement:MoveTo(pos)
+        
+        if not success then 
+            warn(reason)
+            continue
+        end
 
         humanoid.Jump = true
         task.wait(0.25)
@@ -471,6 +456,7 @@ function TaskManager:convertPollen()
         local startTime = tick()
         local timeout = 300
 
+        task.wait(.5)
         while shouldContinueConverting() and bot.isRunning and (tick() - startTime < timeout) and bot.state == bot.State.Convert do
             task.wait(.5)
 

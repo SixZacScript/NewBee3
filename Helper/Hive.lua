@@ -81,7 +81,7 @@ function HiveHelper:getHivePosition()
     local currentHive = self:getMyHive()
     if currentHive then
         local base = currentHive:FindFirstChild("patharrow") and currentHive.patharrow:FindFirstChild("Base")
-        return base and base.Position + Vector3.new(0, 3, 0)
+        return base and base.Position + Vector3.new(0, 4, 0)
     end
     return nil
 end

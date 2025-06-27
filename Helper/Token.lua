@@ -79,6 +79,7 @@ function TokenHelper:handleAddedToken(tokenParams, tokenType)
     end)
     self.activeTokens[serverID] = newToken
 end
+
 function TokenHelper:getBestTokenByField(targetField, options)
     local player = shared.Helpers.Player
     if not player:isValid() or not player.rootPart or not targetField then 
@@ -99,8 +100,12 @@ function TokenHelper:getBestTokenByField(targetField, options)
         if tokenData.isSkill and ignoreSkill then return false end
         if ignoreHoneyToken and tokenData.id == 1472135114 then return false end
         if not farmBubble and tokenData.name == "Bubble" then return false end
+        if tokenData.position.Y > playerRoot.Position.Y + 3 then return false end -- too high
+        if tokenData.position.Y < playerRoot.Position.Y - 3 then return false end -- too low
+
         return true
     end
+
 
     local bestToken = nil
     local shortestDistance = math.huge
