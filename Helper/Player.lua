@@ -27,6 +27,7 @@ function PlayerHelper.new()
     self.Pollen = self.pollenStat.Value
     self.Honey = self.honeyStat.Value
     self.Capacity = self.capacityStat.Value
+
     self:getPlayerStats()
     -- Initialize character references
     self:updateCharacterReferences(self.localPlayer.Character or self.localPlayer.CharacterAdded:Wait())
@@ -44,7 +45,7 @@ function PlayerHelper:updateCharacterReferences(character)
         
         local defaultProps = PhysicalProperties.new(2, 1, 0.8, 0.1, 0.2)
         self.rootPart.CustomPhysicalProperties = defaultProps
-        self.localPlayer.CameraMaxZoomDistance = 300
+        self.localPlayer.CameraMaxZoomDistance = 500
     else
         self.humanoid = nil
         self.rootPart = nil
@@ -459,7 +460,6 @@ function PlayerHelper:getPlanterToPlace()
         if slot.PlanterType == "None" then continue end
         local planterFullname = self:getPlanterFullName(slot.PlanterType)
         local planterAmount = self:getInventoryItem(planterFullname)
-
         if planterAmount == 0 then
             continue
         end
@@ -524,6 +524,18 @@ function PlayerHelper:getScreenGui()
     return nil
 end
 
+function PlayerHelper:getSprinkler()
+    if not self.EquippedSprinkler then return end
+    local sprinklers = {
+        ['Basic Sprinkler'] = {count = 1, radius = 7, power = 7, rate = 5, name = 'Basic Sprinkler'},
+        ['Silver Soakers'] = {count = 2, radius = 7, power = 7, rate = 4.5, name = 'Silver Soakers'},
+        ['Golden Gushers'] = {count = 3, radius = 8, power = 8, rate = 4.5, name = 'Golden Gushers'},
+        ['Diamond Drenchers'] = {count = 4, radius = 8, power = 9, rate = 4, name = 'Diamond Drenchers'},
+        ['The Supreme Saturator'] =  {count = 1, radius = 16, power = 10, rate = 1, name = 'The Supreme Saturator'},
+    }
+
+    return sprinklers[self.EquippedSprinkler]
+end
 function PlayerHelper:click(pos)
     if typeof(pos) ~= "UDim2" then
         warn("Expected UDim2 for position")

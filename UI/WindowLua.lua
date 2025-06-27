@@ -2366,7 +2366,6 @@ local aa = {
                         if not isMobile then
                             l.Close()
                         end
-                        print("on item clicked?")
                         P(0.92)
                     end)
                     c.AddSignal(M.MouseButton1Up,

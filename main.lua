@@ -17,6 +17,7 @@ shared.main = {
         autoPlanter = false,
         autoFarmSprout = false,
         autoHoneyMask = false,
+        autoClock = false,
     },
     farm = {
         farmBubble = false,

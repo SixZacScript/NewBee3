@@ -10,6 +10,7 @@ Bot.__index = Bot
 Bot.State = {
     Convert = "Convert",
     PLANTER = "Do planter",
+    USE_TOYS = "Use toy",
     FARM = "Farm",
     IDLE = "Idle",
 }
@@ -29,9 +30,46 @@ function Bot.new()
     self.botGui = shared.Helpers.Gui
     self.taskManager = TaskManager.new(self)
     self.monsterHelper = MonsterHelper.new()
-    print("bot intialed")
+
     self.currentField = self.Field:getField()
+    self.Toys = {
+        clock = false,
+    }
+
+    self.startTime = os.time()
+    self:setupTimer()
     return self
+end
+
+function Bot:getUptimeString()
+    local elapsed = os.time() - self.startTime
+
+    local days = math.floor(elapsed / 86400)
+    local hours = math.floor((elapsed % 86400) / 3600)
+    local minutes = math.floor((elapsed % 3600) / 60)
+    local seconds = elapsed % 60
+
+    local parts = {}
+    if days > 0 then table.insert(parts, days .. "d") end
+    if hours > 0 then table.insert(parts, hours .. "h") end
+    if minutes > 0 then table.insert(parts, minutes .. "m") end
+    table.insert(parts, seconds .. "s")
+
+    return table.concat(parts, " ")
+end
+
+function Bot:setupTimer()
+    local lastClockTime = os.time()
+
+    task.spawn(function()
+        while true do
+            task.wait(1)
+            if os.time() - lastClockTime >= 3615 then
+                self.Toys.clock = true
+                lastClockTime = os.time()
+            end
+        end
+    end)
 end
 
 function Bot:realtimeCheck()
@@ -78,6 +116,8 @@ function Bot:evaluateState()
         self.state = Bot.State.Convert
     elseif self:shouldDoPlanter() then
         self.state = Bot.State.PLANTER
+    elseif self:shouldUseToy() then
+        self.state = Bot.State.USE_TOYS
     else
         self.state = Bot.State.FARM
     end
@@ -89,6 +129,8 @@ function Bot:executeState()
         self.taskManager:convertPollen()
     elseif self.state == Bot.State.PLANTER then
         self:handlePlanter()
+    elseif self.state == Bot.State.USE_TOYS then
+        self:handleUseToys()
     elseif self.state == Bot.State.FARM then
         self.taskManager:doFarming(self.currentField)
     else
@@ -97,6 +139,19 @@ function Bot:executeState()
     end
 end
 
+function Bot:handleUseToys()
+    local selectedToy, selectedToyName
+    for toyName, toy in pairs(self.Toys) do
+        if toy == true then
+            selectedToy = toy
+            selectedToyName = toyName
+            break
+        end
+    end
+
+    self.taskManager:doUseToy(selectedToyName)
+    return true
+end
 function Bot:handlePlanter()
     local playerHelper = self.plr
     local planterToPlace = playerHelper:getPlanterToPlace()
@@ -203,7 +258,17 @@ function Bot:cleanup()
         self.connections[key] = nil 
     end
 end
-
+function Bot:shouldUseToy()
+    for toyName, toy in pairs(self.Toys) do
+        if toy == true then
+            if toyName == "clock" and not shared.main.auto.autoClock then
+                continue
+            end
+            return toy
+        end
+    end
+   return false 
+end
 function Bot:shouldDoPlanter()
     if not shared.main.auto.autoPlanter then return false end
 
