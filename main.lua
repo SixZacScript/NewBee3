@@ -1,4 +1,4 @@
-shared.isGithub = false
+shared.isGithub = true
 if shared.isGithub then
     shared.URL = "https://raw.githubusercontent.com/SixZacScript/NewBee3/master"
     shared.ModuleLoader = loadstring(game:HttpGet(shared.URL..'/Helper/Module.lua'))()
