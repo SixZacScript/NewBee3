@@ -77,7 +77,6 @@ function playerTab:handleBackToHive()
                 Duration = 3
             })
         end
-        print("tween back to hive")
         shared.Helpers.Player:tweenTo(pos, 1)
     end
 end

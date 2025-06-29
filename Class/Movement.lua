@@ -130,13 +130,19 @@ function MovementModule:MoveTo(targetPosition)
     return success, failureReason
 end
 
+-- Redirect method
+function MovementModule:RedirectTo(position)
+    self:Stop()
+    task.wait(0.05)
+    return self:MoveTo(position)
+end
+
 function MovementModule:Stop()
     self.shouldStop = true
     if self.humanoid then
         self.humanoid:MoveTo(self.character.HumanoidRootPart.Position)
     end
 end
-
 
 -- Set callbacks
 function MovementModule:SetOnFinished(callback)

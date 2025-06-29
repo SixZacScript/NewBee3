@@ -145,14 +145,39 @@ function TaskManager:doSprout(sprout, field)
     })
     return true
 end
-
 function TaskManager:performCleanupCollection(field, options)
-    options = options and options or {}
+    options = options or {}
     local startTime = os.clock()
     local waitTime = options.waitTime or 15
-    
-    while os.clock() - startTime < waitTime and self.bot.isRunning and shared.main.auto.autoFarmSprout do
-        self:farming(field, options)
+    local playerHelper = shared.Helpers.Player
+    local humanoid = playerHelper.humanoid
+
+    while os.clock() - startTime < waitTime and self.bot.isRunning and shared.main.auto.autoFarmSprout and playerHelper:isValid() do
+        local token = self.bot.tokenHelper:getBestTokenByField(field, options)
+
+        if token and not token.touched then
+            humanoid:MoveTo(token.position)
+
+            local reached = false
+            local connection = humanoid.MoveToFinished:Connect(function(reachedFlag)
+                reached = reachedFlag
+            end)
+
+            repeat
+                task.wait()
+                if not (self.bot.isRunning and shared.main.auto.autoFarmSprout and playerHelper:isValid()) then
+                    break
+                end
+
+                local newToken = self.bot.tokenHelper:getBestTokenByField(field, options)
+                if (newToken and not newToken.touched and newToken ~= token) or reached then
+                    break
+                end
+            until false
+
+            if connection then connection:Disconnect() end
+        end
+
         task.wait()
     end
 end
@@ -162,39 +187,36 @@ function TaskManager:farming(currentField, options)
     if not self.bot.isRunning then
         return false 
     end
-
-    -- Clean up existing connection
-    if self.connections.tokenRunService then
-        self.connections.tokenRunService:Disconnect()
-        self.connections.tokenRunService = nil
-    end
-    
-    -- Get initial token and target position
-    local token = self.bot.tokenHelper:getBestTokenByField(currentField, options)
-    local targetPos = (token and not token.touched) and token.position 
-                     or self.bot.Field:getRandomFieldPosition(currentField)
     
     -- Handle monsters before movement
     if self.bot.monsterHelper:getCloseMonsterCount() > 0 then
         self:doJumping()
     end
+
+    local token = self.bot.tokenHelper:getBestTokenByField(currentField, options)
+    local targetPos = (token and not token.touched) and token.position or self.bot.Field:getRandomFieldPosition(currentField)
     local playerHelper = shared.Helpers.Player
     local movement = MovementModule.new(playerHelper.humanoid)
+
+    local redirected = false
     movement:SetOnStep(function()
-        if not self.bot.isRunning then
+        if not self.bot.isRunning or self.bot.monsterHelper:getCloseMonsterCount() > 0 then
             movement:Stop()
-        end
-        if self.bot.monsterHelper:getCloseMonsterCount() > 0 then
-            movement:Stop()
+            return false
         end
 
-        local newToken = self.bot.tokenHelper:getBestTokenByField(currentField)
-        if newToken and not newToken.touched and newToken ~= token then
-            movement:Stop()
+        if not redirected then
+            local newToken = self.bot.tokenHelper:getBestTokenByField(currentField)
+            if newToken and not newToken.touched and newToken ~= token then
+                redirected = true
+                movement:RedirectTo(newToken.position)
+            end
         end
     end)
 
     local success, reason = movement:MoveTo(targetPos)
+    return success
+
 end
 
 function TaskManager:doJumping()
@@ -209,8 +231,9 @@ function TaskManager:doJumping()
 
         local monster = self.bot.monsterHelper:getClosestMonster()
         local char = playerHelper.character
-
-        if char then
+        local Configs = monster:FindFirstChild("Config")
+        if char and Configs then
+            local AttackRadius = Configs.AttackRadius.Value
             local root = playerHelper.rootPart
             local humanoid = playerHelper.humanoid
             local monsterRoot = monster and monster.PrimaryPart
@@ -220,7 +243,7 @@ function TaskManager:doJumping()
                 local horizontalOffset = Vector3.new(offset.X, 0, offset.Z)
                 local distance = horizontalOffset.Magnitude
 
-                if distance <= 25 then
+                if distance <= AttackRadius then
                     local escapeDir = -horizontalOffset.Unit
                     local escapePos = root.Position + escapeDir * 5
 
@@ -346,25 +369,30 @@ function TaskManager:doPlaceSprinkler(field, sprinklerData)
         local playerHelper = shared.Helpers.Player
         local movement = MovementModule.new(playerHelper.humanoid)
         local success, reason = movement:MoveTo(pos)
-        
+
         if not success then 
             warn(reason)
             continue
         end
 
-        humanoid.Jump = true
-        task.wait(0.25)
+        if self.sprinkler.placedCount >= 1 then
+            humanoid.Jump = true
+            task.wait(0.25)
 
-        while humanoid.FloorMaterial ~= Enum.Material.Air and humanoid.Parent and self.bot.isRunning do
-            task.wait()
-        end
+            while humanoid.FloorMaterial ~= Enum.Material.Air and humanoid.Parent and self.bot.isRunning do
+                task.wait()
+            end
 
-        if waitUntilNearGround() then
+            if waitUntilNearGround() then
+                placeSprinklerEvent:FireServer({ Name = "Sprinkler Builder" })
+                self.sprinkler.placedCount += 1
+            end
+        else
             placeSprinklerEvent:FireServer({ Name = "Sprinkler Builder" })
             self.sprinkler.placedCount += 1
             self.sprinkler.field = field
         end
-
+      
         task.wait(1)
     end
 
@@ -372,11 +400,6 @@ function TaskManager:doPlaceSprinkler(field, sprinklerData)
 end
 function TaskManager:doFarming(currentField)
     local playerHelper = self.bot.plr
-    if self.connections.tokenRunService then
-        self.connections.tokenRunService:Disconnect()
-        self.connections.tokenRunService = nil
-    end
-
     local sprout, sproutHealth = self:hasSprout()
     if sprout and shared.main.auto.autoFarmSprout and sproutHealth > 0 then
         local field = shared.Helpers.Field:getFieldByPosition(sprout.Position)
@@ -449,7 +472,7 @@ function TaskManager:convertPollen()
             warn("bot is not running")
             return coroutine.resume(thread, false)
         end
-
+        task.wait(.25)
         player:disableWalking(true)
         convertEvent:FireServer("ToggleHoneyMaking") -- trigger convert event
 

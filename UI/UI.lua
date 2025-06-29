@@ -40,7 +40,7 @@ function FluentHelper:_setupWindow()
 
     if isMobile then
         width = math.clamp(screenWidth * 0.95, 280, screenWidth - 40)
-        height = math.clamp(screenHeight * 0.4, 250, screenHeight - 200)
+        height = math.clamp(screenHeight * 0.45, 250, screenHeight - 200)
         tabWidth = math.clamp(screenWidth * 0.2, 80, 120)
         self:createFloatingButton()
     else

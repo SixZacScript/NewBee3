@@ -47,7 +47,7 @@ function PlayerHelper:updateCharacterReferences(character)
         self.rootPart.CustomPhysicalProperties = defaultProps
         self.localPlayer.CameraMaxZoomDistance = 500
 
-        print("player respawned or created")
+
         if self.humanoidConnection then self.humanoidConnection:Disconnect() end
         self.humanoidConnection = self.humanoid.Died:Connect(function()
             self:onPlayerDied()
@@ -187,7 +187,6 @@ function PlayerHelper:setCharacterAnchored(state)
     self.rootPart.Anchored = state
 end
 
-
 function PlayerHelper:tweenTo(targetPosition, duration, callback)
     if not self:isValid() then return false, "Character is not valid" end
 
@@ -198,20 +197,6 @@ function PlayerHelper:tweenTo(targetPosition, duration, callback)
         self.activeTween = nil
     end
 
-    local rayParams = RaycastParams.new()
-    rayParams.FilterType = Enum.RaycastFilterType.Exclude
-    rayParams.FilterDescendantsInstances = {self.character}
-    rayParams.IgnoreWater = true
-
-    self.blockedParts = {}
-    local direction = targetPosition - self.rootPart.Position
-    local rayResult = workspace:Raycast(self.rootPart.Position, direction, rayParams)
-
-    if rayResult and rayResult.Instance and rayResult.Instance.CanCollide then
-        rayResult.Instance.CanCollide = false
-        table.insert(self.blockedParts, rayResult.Instance)
-    end
-
     -- Create Tween
     local tween = TweenService:Create(self.rootPart, TweenInfo.new(
         duration, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut
@@ -219,15 +204,6 @@ function PlayerHelper:tweenTo(targetPosition, duration, callback)
 
     self.activeTween = tween
     local completed = false
-
-    local function restoreBlockedParts()
-        for _, part in ipairs(self.blockedParts) do
-            if part and part:IsDescendantOf(workspace) then
-                part.CanCollide = true
-            end
-        end
-        self.blockedParts = {}
-    end
 
     local function cleanup()
         if self.tweenMonitorConnection then
@@ -243,7 +219,6 @@ function PlayerHelper:tweenTo(targetPosition, duration, callback)
             tween:Cancel()
             self:setCharacterAnchored(false)
             cleanup()
-            restoreBlockedParts()
         end
     end)
 
@@ -252,7 +227,6 @@ function PlayerHelper:tweenTo(targetPosition, duration, callback)
         completed = true
         self:setCharacterAnchored(false)
         cleanup()
-        restoreBlockedParts()
         self.activeTween = nil
         if callback then callback() end
     end)
@@ -260,6 +234,79 @@ function PlayerHelper:tweenTo(targetPosition, duration, callback)
     tween:Play()
     return true, 'successful tween'
 end
+
+-- function PlayerHelper:tweenTo(targetPosition, duration, callback)
+--     if not self:isValid() then return false, "Character is not valid" end
+
+--     self:setCharacterAnchored(true)
+
+--     if self.activeTween then
+--         self.activeTween:Cancel()
+--         self.activeTween = nil
+--     end
+
+--     local rayParams = RaycastParams.new()
+--     rayParams.FilterType = Enum.RaycastFilterType.Exclude
+--     rayParams.FilterDescendantsInstances = {self.character}
+--     rayParams.IgnoreWater = true
+
+--     self.blockedParts = {}
+--     local direction = targetPosition - self.rootPart.Position
+--     local rayResult = workspace:Raycast(self.rootPart.Position, direction, rayParams)
+
+--     if rayResult and rayResult.Instance and rayResult.Instance.CanCollide then
+--         rayResult.Instance.CanCollide = false
+--         table.insert(self.blockedParts, rayResult.Instance)
+--     end
+
+--     -- Create Tween
+--     local tween = TweenService:Create(self.rootPart, TweenInfo.new(
+--         duration, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut
+--     ), {CFrame = CFrame.new(targetPosition)})
+
+--     self.activeTween = tween
+--     local completed = false
+
+--     local function restoreBlockedParts()
+--         for _, part in ipairs(self.blockedParts) do
+--             if part and part:IsDescendantOf(workspace) then
+--                 part.CanCollide = true
+--             end
+--         end
+--         self.blockedParts = {}
+--     end
+
+--     local function cleanup()
+--         if self.tweenMonitorConnection then
+--             self.tweenMonitorConnection:Disconnect()
+--             self.tweenMonitorConnection = nil
+--         end
+--     end
+
+--     self.tweenMonitorConnection = RunService.Heartbeat:Connect(function()
+--         if completed then return end
+--         if not self:isValid() then
+--             completed = true
+--             tween:Cancel()
+--             self:setCharacterAnchored(false)
+--             cleanup()
+--             restoreBlockedParts()
+--         end
+--     end)
+
+--     tween.Completed:Connect(function()
+--         if completed then return end
+--         completed = true
+--         self:setCharacterAnchored(false)
+--         cleanup()
+--         restoreBlockedParts()
+--         self.activeTween = nil
+--         if callback then callback() end
+--     end)
+
+--     tween:Play()
+--     return true, 'successful tween'
+-- end
 
 function PlayerHelper:isPlayerInField(field)
     if not field or not field:IsA("BasePart") or not self.rootPart then
@@ -554,13 +601,7 @@ function PlayerHelper:onPlayerDied()
 
     if shouldRestart then
         Bot:stop()
-
-        print("Player has died. Waiting for respawn...")
-        
-        -- Wait for new character
-        
         self.localPlayer.CharacterAdded:Wait()
-        
         shared.FluentUI.Fluent:Notify({
             Title = "Bot", 
             Content = "Player respawned. Bot will start in 3 seconds...", 
