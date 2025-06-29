@@ -1,5 +1,3 @@
-local HttpService = game:GetService("HttpService")
-local Rep = game:GetService("ReplicatedStorage")
 local combatUI = {}
 combatUI.__index = combatUI
 
@@ -29,6 +27,7 @@ function combatUI:load(FluentUI)
     })
 
     self:createStatus(self.Tab)
+    return self
 end
 function combatUI:createStatus(section)
     local monsterStatusSection = section:AddSection("Monsters Status")

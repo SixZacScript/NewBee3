@@ -3,30 +3,30 @@ local WP = game:GetService("Workspace")
 local MonstersFolder = WP:FindFirstChild("Monsters")
 local MonsterSpawnersFolder = WP:FindFirstChild("MonsterSpawners")
 local spawnerKey = {
-    ["MushroomBush"]      = { field = "Mushroom Field",     name = "Ladybug",      avoidDistance = 30 },
-    ["Ladybug Bush"]      = { field = "Clover Field",       name = "Ladybug",      avoidDistance = 30 },
-    ["Ladybug Bush 2"]    = { field = "Strawberry Field",   name = "Ladybug",      avoidDistance = 30 },
-    ["Ladybug Bush 3"]    = { field = "Strawberry Field",   name = "Ladybug",      avoidDistance = 30 },
+    ["MushroomBush"]      = { field = "Mushroom Field",     name = "Ladybug",      avoidDistance = 16 },
+    ["Ladybug Bush"]      = { field = "Clover Field",       name = "Ladybug",      avoidDistance = 16 },
+    ["Ladybug Bush 2"]    = { field = "Strawberry Field",   name = "Ladybug",      avoidDistance = 16 },
+    ["Ladybug Bush 3"]    = { field = "Strawberry Field",   name = "Ladybug",      avoidDistance = 16 },
 
-    ["PineappleBeetle"]   = { field = "Pineapple Patch",    name = "Rhino Beetle", avoidDistance = 30 },
-    ["PineappleMantis1"]  = { field = "Pineapple Patch",    name = "Mantis",       avoidDistance = 30 },
+    ["PineappleBeetle"]   = { field = "Pineapple Patch",    name = "Rhino Beetle", avoidDistance = 16 },
+    ["PineappleMantis1"]  = { field = "Pineapple Patch",    name = "Mantis",       avoidDistance = 45 },
 
-    ["ForestMantis1"]     = { field = "Pine Tree Forest",   name = "Mantis",       avoidDistance = 30 },
-    ["ForestMantis2"]     = { field = "Pine Tree Forest",   name = "Mantis",       avoidDistance = 30 },
+    ["ForestMantis1"]     = { field = "Pine Tree Forest",   name = "Mantis",       avoidDistance = 45 },
+    ["ForestMantis2"]     = { field = "Pine Tree Forest",   name = "Mantis",       avoidDistance = 45 },
 
-    ["Rhino Bush"]        = { field = "Clover Field",       name = "Rhino Beetle", avoidDistance = 30 },
-    ["Rhino Cave 1"]      = { field = "Blue Flower Field",  name = "Rhino Beetle", avoidDistance = 30 },
-    ["Rhino Cave 2"]      = { field = "Bamboo Field",       name = "Rhino Beetle", avoidDistance = 30 },
-    ["Rhino Cave 3"]      = { field = "Bamboo Field",       name = "Rhino Beetle", avoidDistance = 30 },
+    ["Rhino Bush"]        = { field = "Clover Field",       name = "Rhino Beetle", avoidDistance = 16 },
+    ["Rhino Cave 1"]      = { field = "Blue Flower Field",  name = "Rhino Beetle", avoidDistance = 16 },
+    ["Rhino Cave 2"]      = { field = "Bamboo Field",       name = "Rhino Beetle", avoidDistance = 16 },
+    ["Rhino Cave 3"]      = { field = "Bamboo Field",       name = "Rhino Beetle", avoidDistance = 16 },
 
-    ["Spider Cave"]       = { field = "Spider Field",       name = "Spider",       avoidDistance = 30 },
+    ["Spider Cave"]       = { field = "Spider Field",       name = "Spider",       avoidDistance = 25 },
 
-    ["RoseBush"]          = { field = "Rose Field",         name = "Scorpion",     avoidDistance = 30 },
-    ["RoseBush2"]         = { field = "Rose Field",         name = "Scorpion",     avoidDistance = 30 },
+    ["RoseBush"]          = { field = "Rose Field",         name = "Scorpion",     avoidDistance = 24 },
+    ["RoseBush2"]         = { field = "Rose Field",         name = "Scorpion",     avoidDistance = 24 },
 
     ["WerewolfCave"]      = { field = "Cactus Field",       name = "Werewolf",     avoidDistance = 30 },
 
-    ["StumpSnail"]        = { field = "Stump Field",        name = "Stump Snail",  avoidDistance = 30 },
+    ["StumpSnail"]        = { field = "Stump Field",        name = "Stump Snail",  avoidDistance = 16 },
     ["CoconutCrab"]       = { field = "Coconut Field",      name = "Coconut Crab", avoidDistance = 30 },
 }
 
@@ -76,26 +76,18 @@ function MonsterHelper:setupListener()
 
     task.spawn(function()
         while true do
-            -- if shared.FluentUI then
-            --     for key, _ in pairs(shared.FluentUI) do
-            --         print(key)
-            --     end
-            -- end
-           
-            -- print('====================')
             local monsterData = MonsterHelper:getMonsterStatus()
             local contentLines = {}
             for _, monster in ipairs(monsterData) do
                 local statusIcon = monster.isSpawned and "🟢" or "🔴"
-                local line = statusIcon .. " | " .. monster.name .. " (" .. monster.timer .. ")"
+                local line = statusIcon .. " | " .. (monster.isSpawned and monster.name or (monster.name .." | ".. monster.timer))
                 table.insert(contentLines, line)
             end
 
-           if shared.FluentUI and shared.FluentUI.combat then  
+            if shared.FluentUI and shared.FluentUI.combat then  
                 shared.FluentUI.combat.monsterStatusInfo:SetDesc(table.concat(contentLines, "\n"))
-            else
-                warn('Combat tab not found.')
             end
+
             task.wait(1)
         end
     end)
@@ -195,7 +187,8 @@ function MonsterHelper:getMonsterStatus()
                 name = v.name,
                 timer = nil,
                 shortestTime = math.huge,
-                isSpawned = false
+                isSpawned = false,
+                field =  v.field,
             }
         end
     end
@@ -216,6 +209,7 @@ function MonsterHelper:getMonsterStatus()
 
                 if isSpawned then
                     monsterGroups[monsterName].isSpawned = true
+                    monsterGroups[monsterName].field = monsterObject.field
                 elseif not monsterGroups[monsterName].isSpawned then
                     local text = timerLabel.Text
                     local minutes, seconds = string.match(text, ":(%d+):(%d+)")
@@ -238,7 +232,8 @@ function MonsterHelper:getMonsterStatus()
         table.insert(monstersStatus, {
             name = data.name,
             timer = data.timer or "--:--",
-            isSpawned = data.isSpawned
+            isSpawned = data.isSpawned,
+            field = data.field,
         })
     end
 

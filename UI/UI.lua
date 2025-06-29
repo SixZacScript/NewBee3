@@ -81,12 +81,11 @@ function FluentHelper:_initializeAllTabs()
 
         if tabModule then
             self[config.name] = tabModule:load(self)
-            print(config.name)
         else
             warn("[FluentHelper] Failed to load tab module: " .. config.name)
         end
     end
-
+    
     self:_setupManagers()
 end
 
