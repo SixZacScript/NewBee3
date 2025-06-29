@@ -25,7 +25,8 @@ function FluentHelper:_initializeCore()
         {name = "main", title = "Main", icon = "grid"},
         {name = "player", title = "Player", icon = "user"},
         {name = "planter", title = "Planter", icon = "sprout"},
-        {name = "quest", title = "Quest", icon = "book-open"},
+        {name = "combat", title = "Combat", icon = "sword"},
+        -- {name = "quest", title = "Quest", icon = "book-open"},
         {name = "toy", title = "Toys", icon = "joystick"},
         {name = "Settings", title = "Setting", icon = "settings"}
     }
@@ -80,6 +81,7 @@ function FluentHelper:_initializeAllTabs()
 
         if tabModule then
             self[config.name] = tabModule:load(self)
+            print(config.name)
         else
             warn("[FluentHelper] Failed to load tab module: " .. config.name)
         end

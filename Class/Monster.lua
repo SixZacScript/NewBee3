@@ -72,6 +72,33 @@ function MonsterHelper:setupListener()
             table.remove(self.Monsters, index) 
         end
     end)
+   
+
+    task.spawn(function()
+        while true do
+            -- if shared.FluentUI then
+            --     for key, _ in pairs(shared.FluentUI) do
+            --         print(key)
+            --     end
+            -- end
+           
+            -- print('====================')
+            local monsterData = MonsterHelper:getMonsterStatus()
+            local contentLines = {}
+            for _, monster in ipairs(monsterData) do
+                local statusIcon = monster.isSpawned and "🟢" or "🔴"
+                local line = statusIcon .. " | " .. monster.name .. " (" .. monster.timer .. ")"
+                table.insert(contentLines, line)
+            end
+
+           if shared.FluentUI and shared.FluentUI.combat then  
+                shared.FluentUI.combat.monsterStatusInfo:SetDesc(table.concat(contentLines, "\n"))
+            else
+                warn('Combat tab not found.')
+            end
+            task.wait(1)
+        end
+    end)
 end
 
 function MonsterHelper:getCloseMonsterCount()
@@ -154,6 +181,68 @@ function MonsterHelper:getClosestMonster()
     end
 
     return closestMonster
+end
+
+
+function MonsterHelper:getMonsterStatus()
+    local monstersStatus = {} -- key: monsterName, value: isSpawned
+
+    -- Create a set of monster names based on spawnerKey
+    local monsterGroups = {}
+    for _, v in pairs(spawnerKey) do
+        if not monsterGroups[v.name] then
+            monsterGroups[v.name] = {
+                name = v.name,
+                timer = nil,
+                shortestTime = math.huge,
+                isSpawned = false
+            }
+        end
+    end
+
+    for _, spawner in ipairs(MonsterSpawnersFolder:GetChildren()) do
+        local monsterTypeObj = spawner:FindFirstChild("MonsterType")
+        local attachment = spawner:FindFirstChildWhichIsA("Attachment")
+
+        local monsterObject = spawnerKey[spawner.Name]
+        if not monsterObject then continue end
+
+        local monsterName = monsterObject.name
+
+        if monsterTypeObj and attachment then
+            local timerLabel = attachment:FindFirstChild("TimerGui") and attachment.TimerGui:FindFirstChild("TimerLabel")
+            if timerLabel then
+                local isSpawned = not timerLabel.Visible
+
+                if isSpawned then
+                    monsterGroups[monsterName].isSpawned = true
+                elseif not monsterGroups[monsterName].isSpawned then
+                    local text = timerLabel.Text
+                    local minutes, seconds = string.match(text, ":(%d+):(%d+)")
+                    if not minutes or not seconds then
+                        minutes, seconds = string.match(text, "(%d+):(%d+)")
+                    end
+                    if minutes and seconds then
+                        local totalSeconds = tonumber(minutes) * 60 + tonumber(seconds)
+                        if totalSeconds < monsterGroups[monsterName].shortestTime then
+                            monsterGroups[monsterName].shortestTime = totalSeconds
+                            monsterGroups[monsterName].timer = minutes .. ":" .. seconds
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    for _, data in pairs(monsterGroups) do
+        table.insert(monstersStatus, {
+            name = data.name,
+            timer = data.timer or "--:--",
+            isSpawned = data.isSpawned
+        })
+    end
+
+    return monstersStatus
 end
 
 return MonsterHelper

@@ -45,6 +45,9 @@ return {
         bestBlueField = nil,
         bestRedField = nil,
     },
+    Monster = {
+        enabledMonsters = {},
+    },
     hideDecorations = false,
     WalkSpeed = 70,
     JumpPower = 80,
