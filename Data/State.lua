@@ -39,6 +39,12 @@ return {
     Equip = {
         defaultMask = nil
     },
+    Quest = {
+        enabledNPCs = {},
+        bestWhiteField = nil,
+        bestBlueField = nil,
+        bestRedField = nil,
+    },
     hideDecorations = false,
     WalkSpeed = 70,
     JumpPower = 80,

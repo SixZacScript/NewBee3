@@ -94,7 +94,7 @@ function mainTab:load(FluentUI)
 
     local playerHelper = shared.Helpers.Player
     local equipedMask = playerHelper:getEquippedMask()
-    local maskIndex =  playerHelper:getMaskIndex(equipedMask) or 1
+    local maskIndex =  playerHelper:getMaskIndex(equipedMask)
     local farmSettinSection = self.Tab:AddSection("Convert Setting")
     self.autoHoneyMask = farmSettinSection:AddToggle("autoHoneyMask", {
         Title = "Auto Honey Mask",

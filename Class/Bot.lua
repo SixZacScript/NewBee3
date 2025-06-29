@@ -166,15 +166,6 @@ function Bot:handlePlanter()
     return true
 end
 
-
-function Bot:cleanup()
-    for key, conn in pairs(self.connections) do
-        if conn and typeof(conn) == "RBXScriptConnection" then
-            conn:Disconnect()
-        end
-        self.connections[key] = nil 
-    end
-end
 function Bot:shouldUseToy()
     for toyName, toy in pairs(self.Toys) do
         if toy == true then
@@ -194,6 +185,15 @@ function Bot:shouldDoPlanter()
     local planterToPlace = playerHelper:getPlanterToPlace()
 
     return canHarvestPlanter or planterToPlace
+end
+
+function Bot:cleanup()
+    for key, conn in pairs(self.connections) do
+        if conn and typeof(conn) == "RBXScriptConnection" then
+            conn:Disconnect()
+        end
+        self.connections[key] = nil 
+    end
 end
 
 function Bot:destroy()

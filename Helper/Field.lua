@@ -4,12 +4,8 @@ local FlowerZones = WP:FindFirstChild('FlowerZones')
 local FieldHelper = {}
 FieldHelper.__index = FieldHelper
 
-local FIELD_TYPE = {
-    WHITE = "White",
-    RED = "Red",
-    BLUE = "Blue",
-}
-local FIELD_TYPE_ORDER = {FIELD_TYPE.WHITE, FIELD_TYPE.BLUE, FIELD_TYPE.RED}
+FieldHelper.FIELD_TYPE = {WHITE = "White", RED = "Red", BLUE = "Blue"}
+FieldHelper.FIELD_TYPE_ORDER = {FieldHelper.WHITE, FieldHelper.BLUE, FieldHelper.RED}
 local RANDOM_POS_CONFIG = {
     PADDING = 15,
     MIN_DISTANCE = 15,
@@ -26,24 +22,24 @@ function FieldHelper:new()
     self.displayNameToFieldMap = {}
     self.fieldMap = {}
     self.fields = {
-        {name = "Sunflower Field", emoji = "🌻", type = FIELD_TYPE.WHITE, bestField = false},
-        {name = "Dandelion Field", emoji = "🌼", type = FIELD_TYPE.WHITE, bestField = true},
-        {name = "Mushroom Field", emoji = "🍄", type = FIELD_TYPE.RED, bestField = true},
-        {name = "Clover Field", emoji = "☘️", type = FIELD_TYPE.BLUE, bestField = false},
-        {name = "Blue Flower Field", emoji = "💠", type = FIELD_TYPE.BLUE, bestField = true},
-        {name = "Spider Field", emoji = "🕷️", type = FIELD_TYPE.WHITE, bestField = false},
-        {name = "Strawberry Field", emoji = "🍓", type = FIELD_TYPE.RED, bestField = false},
-        {name = "Bamboo Field", emoji = "🎍", type = FIELD_TYPE.BLUE, bestField = false},
-        {name = "Pineapple Patch", emoji = "🍍", type = FIELD_TYPE.WHITE, bestField = false},
-        {name = "Pumpkin Patch", emoji = "🎃", type = FIELD_TYPE.WHITE, bestField = false},
-        {name = "Cactus Field", emoji = "🌵", type = FIELD_TYPE.RED, bestField = false},
-        {name = "Pine Tree Forest", emoji = "🌳", type = FIELD_TYPE.BLUE, bestField = false},
-        {name = "Ant Field", emoji = "🐜", type = FIELD_TYPE.RED, bestField = false},
-        {name = "Rose Field", emoji = "🌹", type = FIELD_TYPE.RED, bestField = false},
-        {name = "Stump Field", emoji = "🐌", type = FIELD_TYPE.BLUE, bestField = false},
-        {name = "Mountain Top Field", emoji = "⛰️", type = FIELD_TYPE.BLUE, bestField = false},
-        {name = "Coconut Field", emoji = "🌴", type = FIELD_TYPE.WHITE, bestField = false},
-        {name = "Pepper Patch", emoji = "🌶️", type = FIELD_TYPE.RED, bestField = false},
+        {name = "Sunflower Field", emoji = "🌻", type = self.FIELD_TYPE.WHITE, bestField = false},
+        {name = "Dandelion Field", emoji = "🌼", type = self.FIELD_TYPE.WHITE, bestField = true},
+        {name = "Mushroom Field", emoji = "🍄", type = self.FIELD_TYPE.RED, bestField = true},
+        {name = "Clover Field", emoji = "☘️", type = self.FIELD_TYPE.BLUE, bestField = false},
+        {name = "Blue Flower Field", emoji = "💠", type = self.FIELD_TYPE.BLUE, bestField = true},
+        {name = "Spider Field", emoji = "🕷️", type = self.FIELD_TYPE.WHITE, bestField = false},
+        {name = "Strawberry Field", emoji = "🍓", type = self.FIELD_TYPE.RED, bestField = false},
+        {name = "Bamboo Field", emoji = "🎍", type = self.FIELD_TYPE.BLUE, bestField = false},
+        {name = "Pineapple Patch", emoji = "🍍", type = self.FIELD_TYPE.WHITE, bestField = false},
+        {name = "Pumpkin Patch", emoji = "🎃", type = self.FIELD_TYPE.WHITE, bestField = false},
+        {name = "Cactus Field", emoji = "🌵", type = self.FIELD_TYPE.RED, bestField = false},
+        {name = "Pine Tree Forest", emoji = "🌳", type = self.FIELD_TYPE.BLUE, bestField = false},
+        {name = "Ant Field", emoji = "🐜", type = self.FIELD_TYPE.RED, bestField = false},
+        {name = "Rose Field", emoji = "🌹", type = self.FIELD_TYPE.RED, bestField = false},
+        {name = "Stump Field", emoji = "🐌", type = self.FIELD_TYPE.BLUE, bestField = false},
+        {name = "Mountain Top Field", emoji = "⛰️", type = self.FIELD_TYPE.BLUE, bestField = false},
+        {name = "Coconut Field", emoji = "🌴", type = self.FIELD_TYPE.WHITE, bestField = false},
+        {name = "Pepper Patch", emoji = "🌶️", type = self.FIELD_TYPE.RED, bestField = false},
     }
     for i, field in ipairs(self.fields) do
         local displayName = field.emoji .. field.name
@@ -109,7 +105,18 @@ end
 function FieldHelper:getOriginalFieldName(displayName)
     return self.displayNameToFieldMap[displayName]
 end
+function FieldHelper:getFieldsByType(typeName)
+    local fields = {}
+    local excludeField = {'Ant Field'}
+    for _, field in ipairs(self.fields) do
+        if table.find(excludeField, field.name) then continue end
+        if field.type == typeName then
+            table.insert(fields, field.name)
+        end
+    end
 
+    return fields
+end
 function FieldHelper:getFieldByPosition(position)
     if not position then return nil end
 

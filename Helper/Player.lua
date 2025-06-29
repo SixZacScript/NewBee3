@@ -190,7 +190,7 @@ end
 function PlayerHelper:tweenTo(targetPosition, duration, callback)
     if not self:isValid() then return false, "Character is not valid" end
 
-    self:setCharacterAnchored(true)
+    -- self:setCharacterAnchored(true)
 
     if self.activeTween then
         self.activeTween:Cancel()
@@ -217,7 +217,7 @@ function PlayerHelper:tweenTo(targetPosition, duration, callback)
         if not self:isValid() then
             completed = true
             tween:Cancel()
-            self:setCharacterAnchored(false)
+            -- self:setCharacterAnchored(false)
             cleanup()
         end
     end)
@@ -225,7 +225,7 @@ function PlayerHelper:tweenTo(targetPosition, duration, callback)
     tween.Completed:Connect(function()
         if completed then return end
         completed = true
-        self:setCharacterAnchored(false)
+        -- self:setCharacterAnchored(false)
         cleanup()
         self.activeTween = nil
         if callback then callback() end
@@ -234,79 +234,6 @@ function PlayerHelper:tweenTo(targetPosition, duration, callback)
     tween:Play()
     return true, 'successful tween'
 end
-
--- function PlayerHelper:tweenTo(targetPosition, duration, callback)
---     if not self:isValid() then return false, "Character is not valid" end
-
---     self:setCharacterAnchored(true)
-
---     if self.activeTween then
---         self.activeTween:Cancel()
---         self.activeTween = nil
---     end
-
---     local rayParams = RaycastParams.new()
---     rayParams.FilterType = Enum.RaycastFilterType.Exclude
---     rayParams.FilterDescendantsInstances = {self.character}
---     rayParams.IgnoreWater = true
-
---     self.blockedParts = {}
---     local direction = targetPosition - self.rootPart.Position
---     local rayResult = workspace:Raycast(self.rootPart.Position, direction, rayParams)
-
---     if rayResult and rayResult.Instance and rayResult.Instance.CanCollide then
---         rayResult.Instance.CanCollide = false
---         table.insert(self.blockedParts, rayResult.Instance)
---     end
-
---     -- Create Tween
---     local tween = TweenService:Create(self.rootPart, TweenInfo.new(
---         duration, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut
---     ), {CFrame = CFrame.new(targetPosition)})
-
---     self.activeTween = tween
---     local completed = false
-
---     local function restoreBlockedParts()
---         for _, part in ipairs(self.blockedParts) do
---             if part and part:IsDescendantOf(workspace) then
---                 part.CanCollide = true
---             end
---         end
---         self.blockedParts = {}
---     end
-
---     local function cleanup()
---         if self.tweenMonitorConnection then
---             self.tweenMonitorConnection:Disconnect()
---             self.tweenMonitorConnection = nil
---         end
---     end
-
---     self.tweenMonitorConnection = RunService.Heartbeat:Connect(function()
---         if completed then return end
---         if not self:isValid() then
---             completed = true
---             tween:Cancel()
---             self:setCharacterAnchored(false)
---             cleanup()
---             restoreBlockedParts()
---         end
---     end)
-
---     tween.Completed:Connect(function()
---         if completed then return end
---         completed = true
---         self:setCharacterAnchored(false)
---         cleanup()
---         restoreBlockedParts()
---         self.activeTween = nil
---         if callback then callback() end
---     end)
-
---     tween:Play()
---     return true, 'successful tween'
--- end
 
 function PlayerHelper:isPlayerInField(field)
     if not field or not field:IsA("BasePart") or not self.rootPart then
@@ -325,28 +252,34 @@ function PlayerHelper:isPlayerInField(field)
     return dx <= halfSizeX and dz <= halfSizeZ
 end
 
-function PlayerHelper:getPlayerStats()
+function PlayerHelper:getPlayerStats(callback)
+
     local success, plrStats = pcall(function()
         local RetrievePlayerStats = Rep.Events.RetrievePlayerStats
         return RetrievePlayerStats:InvokeServer()
     end)
-    if not success then
+
+    if success then
+        self.plrStats = plrStats
+        self.Honeycomb = plrStats.Honeycomb or {}
+        self.Accessories = plrStats.Accessories or {}
+        self.EquippedSprinkler = plrStats.EquippedSprinkler or nil
+
+        writefile("playerStats.json", HttpService:JSONEncode(plrStats))
+        if callback then callback(plrStats) end
+    else
         warn("Failed to retrieve player stats:", plrStats)
-        return {}
+        if callback then callback(nil) end
     end
-    self.plrStats = plrStats
-    self.Honeycomb = plrStats.Honeycomb or {}
-    self.Accessories = plrStats.Accessories or {}
-    self.EquippedSprinkler = plrStats.EquippedSprinkler or nil
 
-
-    writefile("playerStats.json", HttpService:JSONEncode(plrStats))
-    return self.plrStats
+    return plrStats or {}
 end
 
-function PlayerHelper:getInventoryItem(itemName)
+
+
+function PlayerHelper:getInventoryItem(itemName, playerStatus)
     local cleanName = string.lower(string.gsub(itemName, "%s+", ""))
-    local playerData = self.plrStats
+    local playerData = playerStatus or self.plrStats
     if not playerData then 
         warn("Player data not found.")
         return 0 
@@ -557,7 +490,11 @@ function PlayerHelper:getScreenGui()
         local Scroller = ShopGui.Scroller
         local BuyButton: TextButton = Scroller.BuyButton
         BuyButton.MouseButton1Click:Connect(function()
-            self:getPlayerStats()
+            self:getPlayerStats(function(playerStatus)
+                local paperPlanter = self:getInventoryItem("PaperPlanter", playerStatus)
+                print(paperPlanter)
+            end)
+            
             if shared.FluentUI then
                 shared.FluentUI.main.defaultMask:SetValue(self:getPlayerMasks()) --refresh value for dorpdown
             end

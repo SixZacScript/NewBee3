@@ -16,8 +16,10 @@ shared.Data = {
 }
 shared.Helpers = shared.ModuleLoader:loadAllHelpers()
 local FluentModule = shared.ModuleLoader:load('UI/UI.lua')
+-- local QuestModule = shared.ModuleLoader:load('Class/Quest.lua')
 local BotModule = shared.ModuleLoader:load('Class/Bot.lua')
 
 
 shared.Bot = BotModule.new()
+-- shared.Quest = QuestModule.new()
 shared.FluentUI = FluentModule.new()

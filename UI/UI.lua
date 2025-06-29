@@ -25,6 +25,7 @@ function FluentHelper:_initializeCore()
         {name = "main", title = "Main", icon = "grid"},
         {name = "player", title = "Player", icon = "user"},
         {name = "planter", title = "Planter", icon = "sprout"},
+        {name = "quest", title = "Quest", icon = "book-open"},
         {name = "toy", title = "Toys", icon = "joystick"},
         {name = "Settings", title = "Setting", icon = "settings"}
     }
